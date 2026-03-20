@@ -289,6 +289,7 @@ fun CategoryBadge(category: DetectionCategory, modifier: Modifier = Modifier) {
         DetectionCategory.ADB_DEBUG -> "ADB/Debug" to Color(0xFF558B2F)
         DetectionCategory.FRIDA -> "Frida" to Color(0xFF6D4C41)
         DetectionCategory.ENVIRONMENT -> "Environment" to Color(0xFF00838F)
+        DetectionCategory.NETWORK -> "Network" to Color(0xFF1565C0)
     }
     Surface(
         shape = RoundedCornerShape(4.dp),

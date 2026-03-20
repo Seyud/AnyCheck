@@ -39,7 +39,8 @@ enum class DetectionCategory {
     SYSTEM_INTEGRITY,
     ADB_DEBUG,
     FRIDA,
-    ENVIRONMENT
+    ENVIRONMENT,
+    NETWORK
 }
 
 /**
