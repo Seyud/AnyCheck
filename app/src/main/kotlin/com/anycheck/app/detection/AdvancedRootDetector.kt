@@ -645,21 +645,35 @@ class AdvancedRootDetector(private val context: Context) {
 
     /** Check 14: Root/hook framework libraries injected into this process */
     private fun checkInjectedLibraries(): DetectionResult {
-        val suspiciousPatterns = listOf(
-            "magisk", "zygisk", "ksu", "kernelsu", "frida",
-            "xposed", "lsposed", "edxposed", "riru", "inject", "hook"
+        // Check the FILENAME (basename) only — not the full path — to avoid false positives
+        // from Magisk mirror paths like /sbin/.magisk/mirror/system/lib64/libfoo.so
+        // where "magisk" appears only in the mount-point prefix, not the library name itself.
+        val suspiciousFilenamePatterns = listOf(
+            "magisk", "zygisk", "frida", "xposed", "lsposed", "edxposed", "riru"
         )
+        // For generic patterns (inject/hook) only flag libraries outside trusted system paths
+        val genericPatterns = listOf("inject", "hook")
+        val trustedSystemPaths = listOf(
+            "/system/", "/vendor/", "/apex/", "/product/",
+            "/system_ext/", "/odm/", "/oem/"
+        )
+
         val found = mutableListOf<String>()
         return try {
             val maps = File("/proc/self/maps").readText()
             maps.lines().forEach { line ->
-                suspiciousPatterns.forEach { pattern ->
-                    if (line.contains(pattern, ignoreCase = true) && line.contains(".so") &&
-                        found.none { it.contains(pattern, ignoreCase = true) }
-                    ) {
-                        val path = line.trim().split("\\s+".toRegex()).lastOrNull()?.trim() ?: ""
-                        if (path.isNotEmpty()) found.add(path.take(80))
-                    }
+                if (!line.contains(".so")) return@forEach
+                val path = line.trim().split("\\s+".toRegex()).lastOrNull()?.trim() ?: return@forEach
+                if (path.isEmpty() || path.startsWith("[") || path.startsWith("anon")) return@forEach
+
+                val filename = path.substringAfterLast("/").lowercase()
+                val isSystemPath = trustedSystemPaths.any { path.startsWith(it) }
+
+                val suspicious = suspiciousFilenamePatterns.any { filename.contains(it) } ||
+                    (!isSystemPath && genericPatterns.any { filename.contains(it) })
+
+                if (suspicious && !found.contains(path.take(80))) {
+                    found.add(path.take(80))
                 }
             }
             if (found.isNotEmpty()) {

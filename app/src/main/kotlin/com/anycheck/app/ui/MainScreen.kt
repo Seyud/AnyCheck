@@ -197,7 +197,7 @@ private fun IdleScreen(onStartDetection: () -> Unit, modifier: Modifier = Modifi
             FeatureRow("APatch & generic root (5 checks)")
             FeatureRow("Xposed / LSPosed / EdXposed (8 checks)")
             FeatureRow("Advanced root checks (19 checks)")
-            FeatureRow("Detailed reason & solution for each")
+            FeatureRow("Extra: mounts, capabilities, bypass modules (15 checks)")
         }
         Spacer(modifier = Modifier.height(32.dp))
         Button(
