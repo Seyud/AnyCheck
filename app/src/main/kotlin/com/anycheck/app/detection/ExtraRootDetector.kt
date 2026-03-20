@@ -167,20 +167,32 @@ class ExtraRootDetector(private val context: Context) {
 
     // ----------------------------------------------------------------
     // Check 3: Magisk/KSU overlay mounts in /proc/self/mountinfo
+    // Only flags mount entries that reference unambiguously root-framework
+    // paths (e.g. /data/adb/magisk, /data/adb/ksu). Vendor and OEM
+    // overlayfs mounts that are part of the normal Android system (e.g.
+    // those without /data/adb in their source path) are excluded to
+    // prevent false positives on stock devices with system-level overlays.
     // ----------------------------------------------------------------
     private fun checkMountInfoOverlay(): DetectionResult {
         return try {
             val mountinfo = File("/proc/self/mountinfo").readText()
-            val magiskMountMarkers = listOf(
-                "/magisk", ".magisk", "magisk_", "/@magisk",
-                "/ksu", "/kernelsu", "/@ksu"
+            // Only match paths that are clearly from root-framework working directories.
+            // /data/adb/magisk and /data/adb/ksu are the canonical install paths used
+            // by Magisk and KernelSU respectively. Vendor overlayfs mounts do not
+            // reference these paths and are therefore excluded.
+            val rootFrameworkSourcePrefixes = listOf(
+                "/data/adb/magisk", "/data/adb/ksu", "/data/adb/modules",
+                "/@magisk", "/@ksu"
             )
             val found = mutableListOf<String>()
             mountinfo.lines().forEach { line ->
-                magiskMountMarkers.forEach { marker ->
-                    if (line.contains(marker, ignoreCase = true) && !found.contains(line.take(80))) {
-                        found.add(line.take(80))
-                    }
+                val sepIdx = line.indexOf(" - ")
+                if (sepIdx < 0) return@forEach
+                val source = line.substring(sepIdx + 3).trim().split(" ").getOrNull(1) ?: return@forEach
+                if (rootFrameworkSourcePrefixes.any { source.startsWith(it) } &&
+                    !found.contains(line.take(80))
+                ) {
+                    found.add(line.take(80))
                 }
             }
             if (found.isNotEmpty()) {
@@ -191,7 +203,8 @@ class ExtraRootDetector(private val context: Context) {
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
                     description = "Root framework overlay mount entries found in /proc/self/mountinfo.",
-                    detailedReason = "/proc/self/mountinfo shows ${found.size} mount entry/entries containing Magisk/KSU markers. " +
+                    detailedReason = "/proc/self/mountinfo shows ${found.size} mount entry/entries sourced " +
+                        "from Magisk/KSU directories (/data/adb/magisk or /data/adb/ksu). " +
                         "These are bind-mounts created by the root framework's module system " +
                         "to overlay modified files over the original system partition.",
                     solution = "Remove root framework modules or uninstall the root framework entirely.",
@@ -840,7 +853,10 @@ class ExtraRootDetector(private val context: Context) {
     private fun checkHiddenSystemBindMounts(): DetectionResult {
         return try {
             val mountinfo = File("/proc/self/mountinfo").readText()
-            // A bind-mount over /system or /vendor from /data or tmpfs is a Magisk/KSU module signal.
+            // Only flag bind-mounts over /system, /vendor, or /product whose source
+            // originates from the Magisk/KSU working directory (/data/adb). Generic
+            // /data mounts, OEM overlayfs, and vendor bind-mounts are excluded to
+            // avoid false positives on stock and carrier-customised devices.
             // mountinfo(5) format:
             //   id parent devno root mountPoint mountOpts [optionalFields...] - fsType source superOpts
             // The "-" separator marks the end of variable optional fields.
@@ -853,16 +869,15 @@ class ExtraRootDetector(private val context: Context) {
                 // Find the "-" separator to locate fsType and source correctly
                 val sepIdx = parts.indexOf("-")
                 if (sepIdx < 0 || sepIdx + 2 >= parts.size) return@forEach
-                val fsType = parts[sepIdx + 1]
-                val source  = parts[sepIdx + 2]
+                val source = parts[sepIdx + 2]
 
-                // A bind-mount over /system that comes from /data or similar is suspicious
+                // Only flag mounts over system partitions that explicitly come from
+                // the Magisk/KSU module install path (/data/adb).
                 val isSystemPath = mountPoint.startsWith("/system") ||
                     mountPoint.startsWith("/vendor") || mountPoint.startsWith("/product")
-                val isFromData = source.startsWith("/data") || fsType == "tmpfs" ||
-                    source.startsWith("/dev")
+                val isFromRootFramework = source.startsWith("/data/adb")
 
-                if (isSystemPath && isFromData && !suspiciousBinds.contains(mountPoint)) {
+                if (isSystemPath && isFromRootFramework && !suspiciousBinds.contains(mountPoint)) {
                     suspiciousBinds.add("$mountPoint←$source")
                 }
             }
@@ -873,9 +888,9 @@ class ExtraRootDetector(private val context: Context) {
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Non-standard bind-mounts over /system detected.",
+                    description = "Root-framework bind-mounts over /system detected.",
                     detailedReason = "Magisk and KernelSU modules replace files in /system by " +
-                        "bind-mounting modified copies from /data. " +
+                        "bind-mounting modified copies from /data/adb. " +
                         "Found bind-mounts: ${suspiciousBinds.take(5).joinToString(", ")}. " +
                         "These replace stock system files with module-provided versions.",
                     solution = "Remove root modules or uninstall the root framework.",
@@ -889,7 +904,7 @@ class ExtraRootDetector(private val context: Context) {
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
                     description = "No suspicious /system bind-mounts found.",
-                    detailedReason = "No unexpected bind-mounts over /system, /vendor or /product found.",
+                    detailedReason = "No root-framework (/data/adb) sourced bind-mounts over /system, /vendor or /product found.",
                     solution = "No action required."
                 )
             }

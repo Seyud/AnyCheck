@@ -33,7 +33,8 @@ class XposedDetector(private val context: Context) {
         checkZygiskEnvAndProps(),
         checkLSPosedFullStackTrace(),
         checkSMAPSInlineHooks(),
-        checkZygiskModuleInjectionInMaps()
+        checkZygiskModuleInjectionInMaps(),
+        checkLspdProcess()
     )
 
     /** Check 1: Xposed / LSPosed / EdXposed manager package names */
@@ -1281,6 +1282,64 @@ class XposedDetector(private val context: Context) {
                 riskLevel = RiskLevel.CRITICAL,
                 description = "No Zygisk module libraries found in process memory map.",
                 detailedReason = "No /data/adb/modules/*/zygisk/ paths found in /proc/self/maps.",
+                solution = "No action required."
+            )
+        }
+    }
+
+    /**
+     * Check 23: LSPosed daemon (lspd) process detection.
+     * Scans /proc for a running process whose command line matches "lspd".
+     * The lspd daemon is the background service that manages the LSPosed
+     * framework; its presence in the process list confirms LSPosed is active
+     * even when other indicators have been hidden.
+     */
+    private fun checkLspdProcess(): DetectionResult {
+        val foundPids = mutableListOf<String>()
+        try {
+            val procDir = File("/proc")
+            procDir.listFiles()?.forEach { pidDir ->
+                if (!pidDir.isDirectory) return@forEach
+                val name = pidDir.name
+                if (!name.all { it.isDigit() }) return@forEach
+                try {
+                    val cmdline = File(pidDir, "cmdline").readText()
+                        .replace('\u0000', ' ').trim()
+                    // Match the process name "lspd" exactly (as the first token)
+                    // to avoid false-matching processes like "lspdump" etc.
+                    val procName = cmdline.split(" ").firstOrNull()
+                        ?.substringAfterLast("/") ?: return@forEach
+                    if (procName == "lspd") {
+                        foundPids.add("pid=$name cmdline=${cmdline.take(80)}")
+                    }
+                } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
+
+        return if (foundPids.isNotEmpty()) {
+            DetectionResult(
+                id = "lspd_process",
+                name = "LSPosed Daemon Process Detected",
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = "The LSPosed daemon (lspd) is running on this device.",
+                detailedReason = "A process named 'lspd' was found in /proc. " +
+                    "lspd is the background daemon of the LSPosed framework that manages " +
+                    "hook modules and injects code into app processes via Zygote. " +
+                    "Found: ${foundPids.joinToString("; ")}.",
+                solution = "Uninstall LSPosed via its manager app and reboot to stop the daemon.",
+                technicalDetail = foundPids.joinToString("; ")
+            )
+        } else {
+            DetectionResult(
+                id = "lspd_process",
+                name = "LSPosed Daemon Process",
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = "No LSPosed daemon (lspd) process found.",
+                detailedReason = "No process named 'lspd' was found in /proc.",
                 solution = "No action required."
             )
         }

@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.net.InetAddress
 
 /**
  * Luna-inspired detection engine.
@@ -19,7 +18,6 @@ import java.net.InetAddress
  *  - rustmagisk     → APatch process scan via /proc
  *  - fhma           → suspicious system-file size check (stat)
  *  - checksuskernel → kernel-level stat anomaly via /proc/net/unix + SELinux context
- *  - checkdns       → DNS integrity check via known-domain resolution
  *  - magiskmounts   → /proc/mounts Magisk bind-mount / overlayfs detection
  *  - zygoteinject   → Zygote injection via SELinux context inspection
  *  - tmpfsmount     → tmpfs SELinux context anomaly on /mnt/obb and /mnt/asec
@@ -34,7 +32,6 @@ class LunaDetector(private val context: Context) {
         checkAPatchProcesses(),
         checkSuspiciousFileSize(),
         checkKernelStatAnomaly(),
-        checkDnsIntegrity(),
         checkMagiskProcMounts(),
         checkZygoteInjection(),
         checkTmpfsMountAnomaly()
@@ -409,97 +406,10 @@ class LunaDetector(private val context: Context) {
     }
 
     // -------------------------------------------------------------------------
-    // Luna: checkdns
-    // getaddrinfo(DAT_0013f8c8, ...) → inet_ntop → strcmp with DAT_0013f8d8
-    // Resolves a well-known hostname and verifies the returned IP is expected.
-    // Returns DETECTED if DNS resolution returns unexpected results.
-    // -------------------------------------------------------------------------
-    private fun checkDnsIntegrity(): DetectionResult {
-        // Google's connectivity-check domain has stable, well-known IP ranges.
-        // Unexpected IPs could indicate DNS hijacking by root tools or VPN.
-        val testDomain = "connectivitycheck.gstatic.com"
-        // Known Google IP prefixes (IPv4 and IPv6 ranges for gstatic.com)
-        val googleIpPrefixes = listOf(
-            "142.250.", "172.217.", "216.58.", "64.233.", "74.125.",
-            "209.85.", "66.102.", "2a00:1450:", "2607:f8b0:", "2404:6800:"
-        )
-
-        return try {
-            val addresses = InetAddress.getAllByName(testDomain)
-            val resolvedIps = addresses.mapNotNull { it.hostAddress }
-
-            if (resolvedIps.isEmpty()) {
-                // No resolution result — network may be offline; skip check
-                DetectionResult(
-                    id = "luna_dns_check",
-                    name = "DNS Integrity",
-                    category = DetectionCategory.ENVIRONMENT,
-                    status = DetectionStatus.NOT_DETECTED,
-                    riskLevel = RiskLevel.MEDIUM,
-                    description = "DNS check skipped (no network or resolution failed).",
-                    detailedReason = "Luna-method (checkdns): getaddrinfo returned no addresses. " +
-                        "Network may be unavailable.",
-                    solution = "No action required."
-                )
-            } else {
-                val allExpected = resolvedIps.all { ip ->
-                    googleIpPrefixes.any { prefix -> ip.startsWith(prefix) }
-                }
-                if (!allExpected) {
-                    val unexpected = resolvedIps.filter { ip ->
-                        googleIpPrefixes.none { prefix -> ip.startsWith(prefix) }
-                    }
-                    DetectionResult(
-                        id = "luna_dns_check",
-                        name = "DNS Hijacking Detected",
-                        category = DetectionCategory.ENVIRONMENT,
-                        status = DetectionStatus.DETECTED,
-                        riskLevel = RiskLevel.MEDIUM,
-                        description = "DNS resolution returned unexpected IP addresses.",
-                        detailedReason = "Luna-method (checkdns): $testDomain resolved to unexpected IPs: " +
-                            "${unexpected.joinToString(", ")}. " +
-                            "Root tools may modify /etc/hosts or install a local DNS proxy to redirect " +
-                            "traffic and bypass security checks.",
-                        solution = "Check /system/etc/hosts for unauthorized entries and review VPN/proxy configuration.",
-                        technicalDetail = "Resolved: ${resolvedIps.joinToString(", ")}; " +
-                            "unexpected: ${unexpected.joinToString(", ")}"
-                    )
-                } else {
-                    DetectionResult(
-                        id = "luna_dns_check",
-                        name = "DNS Integrity",
-                        category = DetectionCategory.ENVIRONMENT,
-                        status = DetectionStatus.NOT_DETECTED,
-                        riskLevel = RiskLevel.MEDIUM,
-                        description = "DNS resolution returned expected IP addresses.",
-                        detailedReason = "Luna-method (checkdns): $testDomain resolved to expected " +
-                            "Google IPs: ${resolvedIps.joinToString(", ")}.",
-                        solution = "No action required."
-                    )
-                }
-            }
-        } catch (_: Exception) {
-            // Network unavailable → mark as not detected (safe default)
-            DetectionResult(
-                id = "luna_dns_check",
-                name = "DNS Integrity",
-                category = DetectionCategory.ENVIRONMENT,
-                status = DetectionStatus.NOT_DETECTED,
-                riskLevel = RiskLevel.MEDIUM,
-                description = "DNS check skipped (network error or no connectivity).",
-                detailedReason = "Luna-method (checkdns): DNS resolution failed — network may be offline.",
-                solution = "No action required."
-            )
-        }
-    }
-
-    // -------------------------------------------------------------------------
     // Luna: magiskmounts
     // Parses /proc/mounts (equivalent to /proc/self/mounts) looking for entries
     // characteristic of Magisk bind-mounts, overlayfs, and mirror paths used by
     // Magisk to hide its modifications from the regular filesystem namespace.
-    // Based on analysis of Luna magisks() and the Native Test /proc/self/mounts
-    // check which searches for /apex/com.android.os*, /data_mirror, and /data/.
     // -------------------------------------------------------------------------
     private fun checkMagiskProcMounts(): DetectionResult {
         val suspicious = mutableListOf<String>()
@@ -508,15 +418,14 @@ class LunaDetector(private val context: Context) {
             val mounts = File("/proc/self/mounts")
             if (mounts.canRead()) {
                 val lines = mounts.readLines()
-                // Magisk-specific mount markers found by Luna analysis:
-                // • "magisk" anywhere in the mount entry
-                // • ".magisk" hidden directory references
-                // • /data_mirror — Magisk uses this to mirror /data for module overlays
-                // • /apex/com.android.os — Magisk patches APEX modules
-                // • overlay/tmpfs on top of /data — indicates bind-mount root hiding
+                // Only flag unambiguously Magisk/KSU-specific markers.
+                // Excluded intentionally:
+                // • /data_mirror  — Android 11+ new namespace mechanism (normal on stock AOSP)
+                // • /apex/com.android.os — APEX partition present on all modern Android devices
+                // Both of the above appear on clean devices and must not be treated as root signals.
                 val magiskMarkers = listOf(
-                    "magisk", ".magisk", "/data_mirror",
-                    "/apex/com.android.os", "worker/upper/data",
+                    "magisk", ".magisk",
+                    "worker/upper/data",
                     "/sbin/.core", "@ksu"
                 )
                 for (line in lines) {
