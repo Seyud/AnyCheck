@@ -2,7 +2,6 @@ package com.anycheck.app.detection
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -13,30 +12,32 @@ import java.net.InetAddress
  *
  * Implements detection methods reverse-engineered from the Luna safety checker
  * (luna.safe.luna / JNI methods in libluna.so), covering:
- *  - findlsp     → LSPosed API system property check
- *  - findksu     → KernelSU daemon service property check
- *  - checkxiaomi → Xiaomi/MIUI device identification
- *  - rhosts      → /system/etc/hosts tampering check
- *  - checkappnum → Magisk daemon service property check
- *  - psdir       → PATH-directory su/root binary scan
- *  - rustmagisk  → APatch process scan via /proc
- *  - fhma        → suspicious system-file size check (stat)
+ *  - findlsp        → LSPosed API system property check
+ *  - findksu        → KernelSU daemon service property check
+ *  - checkappnum    → Magisk daemon service property check
+ *  - psdir          → PATH-directory su/root binary scan
+ *  - rustmagisk     → APatch process scan via /proc
+ *  - fhma           → suspicious system-file size check (stat)
  *  - checksuskernel → kernel-level stat anomaly via /proc/net/unix + SELinux context
- *  - checkdns    → DNS integrity check via known-domain resolution
+ *  - checkdns       → DNS integrity check via known-domain resolution
+ *  - magiskmounts   → /proc/mounts Magisk bind-mount / overlayfs detection
+ *  - zygoteinject   → Zygote injection via SELinux context inspection
+ *  - tmpfsmount     → tmpfs SELinux context anomaly on /mnt/obb and /mnt/asec
  */
 class LunaDetector(private val context: Context) {
 
     fun runAllChecks(): List<DetectionResult> = listOf(
         checkLSPosedApiProperty(),
         checkKernelSUDaemon(),
-        checkXiaomiMIUI(),
-        checkHostsModification(),
         checkMagiskDaemonProperty(),
         checkSuInPathDirectories(),
         checkAPatchProcesses(),
         checkSuspiciousFileSize(),
         checkKernelStatAnomaly(),
-        checkDnsIntegrity()
+        checkDnsIntegrity(),
+        checkMagiskProcMounts(),
+        checkZygoteInjection(),
+        checkTmpfsMountAnomaly()
     )
 
     // -------------------------------------------------------------------------
@@ -132,114 +133,6 @@ class LunaDetector(private val context: Context) {
                 description = "No KernelSU daemon service properties found.",
                 detailedReason = "Luna-method (findksu): None of the KernelSU service properties " +
                     "(init.svc.ksuud, init.svc.ksu) were found.",
-                solution = "No action required."
-            )
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Luna: checkxiaomi
-    // __system_property_get(DAT_001404f0, buf) → exists means MIUI device
-    // -------------------------------------------------------------------------
-    private fun checkXiaomiMIUI(): DetectionResult {
-        val miuiProps = listOf(
-            "ro.miui.ui.version.code",
-            "ro.miui.ui.version.name",
-            "ro.product.mod_device"
-        )
-        val found = mutableListOf<String>()
-        for (prop in miuiProps) {
-            val value = getSystemProperty(prop)
-            if (value.isNotEmpty()) found.add("$prop=$value")
-        }
-        val brand = Build.BRAND.lowercase()
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        val isXiaomi = brand in listOf("xiaomi", "redmi", "poco") ||
-            manufacturer in listOf("xiaomi", "redmi")
-        if (isXiaomi && found.isEmpty()) found.add("Build.BRAND=${Build.BRAND}")
-
-        // Being a Xiaomi/MIUI device is device-context information only.
-        // It is NOT a root indicator, so we always report NOT_DETECTED regardless
-        // of whether the device is Xiaomi, to avoid false positives ("turning red").
-        return DetectionResult(
-            id = "luna_xiaomi_miui",
-            name = "Xiaomi/MIUI Device",
-            category = DetectionCategory.ENVIRONMENT,
-            status = DetectionStatus.NOT_DETECTED,
-            riskLevel = RiskLevel.INFO,
-            description = if (found.isNotEmpty())
-                "Device is running MIUI/HyperOS or is a Xiaomi/Redmi device (informational only)."
-            else
-                "Device is not a Xiaomi/MIUI device.",
-            detailedReason = if (found.isNotEmpty())
-                "Luna-method (checkxiaomi): Device identified as Xiaomi/MIUI — " +
-                    "found: ${found.joinToString(", ")}. " +
-                    "This is purely informational; device brand is not a root indicator."
-            else
-                "Luna-method (checkxiaomi): No MIUI system properties detected.",
-            solution = "No action required.",
-            technicalDetail = if (found.isNotEmpty()) "Xiaomi props: ${found.joinToString("; ")}" else ""
-        )
-    }
-
-    // -------------------------------------------------------------------------
-    // Luna: rhosts
-    // Opens DAT_0013fe10 (/system/etc/hosts) and DAT_0013fe28 (/etc/hosts),
-    // reads content, and returns line data; detects non-default entries.
-    // -------------------------------------------------------------------------
-    private fun checkHostsModification(): DetectionResult {
-        val hostsFiles = listOf("/system/etc/hosts", "/etc/hosts")
-        val suspicious = mutableListOf<String>()
-
-        for (path in hostsFiles) {
-            val file = File(path)
-            if (!file.exists()) continue
-            try {
-                val lines = file.readLines()
-                val nonStandard = lines.filter { line ->
-                    val t = line.trim()
-                    t.isNotEmpty() && !t.startsWith("#") &&
-                        t !in setOf(
-                            "127.0.0.1 localhost",
-                            "127.0.0.1  localhost",
-                            "::1 localhost",
-                            "::1  localhost",
-                            "fe80::1%lo0 localhost"
-                        )
-                }
-                if (nonStandard.isNotEmpty()) {
-                    suspicious.add("$path: ${nonStandard.size} non-standard entr(ies)")
-                }
-                if (file.length() > 200L) {
-                    suspicious.add("$path size=${file.length()} bytes (unusually large)")
-                }
-            } catch (_: Exception) {}
-        }
-
-        return if (suspicious.isNotEmpty()) {
-            DetectionResult(
-                id = "luna_hosts_tamper",
-                name = "Hosts File Tampering Detected",
-                category = DetectionCategory.SYSTEM_INTEGRITY,
-                status = DetectionStatus.DETECTED,
-                riskLevel = RiskLevel.MEDIUM,
-                description = "System hosts file has been modified beyond standard localhost entries.",
-                detailedReason = "Luna-method (rhosts): fopen/fread on /system/etc/hosts and /etc/hosts " +
-                    "detected non-standard content. ${suspicious.joinToString("; ")}. " +
-                    "Root tools often modify the hosts file to redirect or block detection-server traffic.",
-                solution = "Restore the default hosts file: it should only contain the " +
-                    "'127.0.0.1 localhost' and '::1 localhost' entries.",
-                technicalDetail = suspicious.joinToString("; ")
-            )
-        } else {
-            DetectionResult(
-                id = "luna_hosts_tamper",
-                name = "Hosts File Tampering",
-                category = DetectionCategory.SYSTEM_INTEGRITY,
-                status = DetectionStatus.NOT_DETECTED,
-                riskLevel = RiskLevel.MEDIUM,
-                description = "System hosts file appears unmodified.",
-                detailedReason = "Luna-method (rhosts): No non-standard entries found in the hosts files.",
                 solution = "No action required."
             )
         }
@@ -404,11 +297,10 @@ class LunaDetector(private val context: Context) {
     // Checks that small system config files have not grown unexpectedly.
     // -------------------------------------------------------------------------
     private fun checkSuspiciousFileSize(): DetectionResult {
-        // Maps path → maximum expected size in bytes
+        // Maps path → maximum expected size in bytes.
         // Luna flags size > 2047 bytes on a particular file; we apply the same
-        // threshold to well-known small config files that root tools may replace.
+        // threshold to small system files that root tools may replace.
         val sizeThresholds = mapOf(
-            "/system/etc/hosts" to 200L,
             "/proc/self/attr/current" to 512L
         )
         val suspicious = mutableListOf<String>()
@@ -596,6 +488,217 @@ class LunaDetector(private val context: Context) {
                 riskLevel = RiskLevel.MEDIUM,
                 description = "DNS check skipped (network error or no connectivity).",
                 detailedReason = "Luna-method (checkdns): DNS resolution failed — network may be offline.",
+                solution = "No action required."
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Luna: magiskmounts
+    // Parses /proc/mounts (equivalent to /proc/self/mounts) looking for entries
+    // characteristic of Magisk bind-mounts, overlayfs, and mirror paths used by
+    // Magisk to hide its modifications from the regular filesystem namespace.
+    // Based on analysis of Luna magisks() and the Native Test /proc/self/mounts
+    // check which searches for /apex/com.android.os*, /data_mirror, and /data/.
+    // -------------------------------------------------------------------------
+    private fun checkMagiskProcMounts(): DetectionResult {
+        val suspicious = mutableListOf<String>()
+
+        try {
+            val mounts = File("/proc/self/mounts")
+            if (mounts.canRead()) {
+                val lines = mounts.readLines()
+                // Magisk-specific mount markers found by Luna analysis:
+                // • "magisk" anywhere in the mount entry
+                // • ".magisk" hidden directory references
+                // • /data_mirror — Magisk uses this to mirror /data for module overlays
+                // • /apex/com.android.os — Magisk patches APEX modules
+                // • overlay/tmpfs on top of /data — indicates bind-mount root hiding
+                val magiskMarkers = listOf(
+                    "magisk", ".magisk", "/data_mirror",
+                    "/apex/com.android.os", "worker/upper/data",
+                    "/sbin/.core", "@ksu"
+                )
+                for (line in lines) {
+                    val lower = line.lowercase()
+                    for (marker in magiskMarkers) {
+                        if (lower.contains(marker.lowercase()) &&
+                            suspicious.none { it.contains(marker) }
+                        ) {
+                            suspicious.add("$marker in mount entry: ${line.take(120)}")
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        return if (suspicious.isNotEmpty()) {
+            DetectionResult(
+                id = "luna_magisk_mounts",
+                name = "Magisk Mount Entries Detected",
+                category = DetectionCategory.MAGISK,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = "Magisk-related entries found in /proc/self/mounts.",
+                detailedReason = "Luna-method (magiskmounts): /proc/self/mounts contains characteristic " +
+                    "Magisk bind-mount or overlay entries. " +
+                    "Found: ${suspicious.joinToString("; ")}. " +
+                    "Magisk hides itself and its modules by creating bind-mounts and overlay filesystems " +
+                    "that leave traces in the mount table.",
+                solution = "Uninstall Magisk via the Magisk Manager app and reboot to restore stock mounts.",
+                technicalDetail = suspicious.joinToString("; ")
+            )
+        } else {
+            DetectionResult(
+                id = "luna_magisk_mounts",
+                name = "Magisk Mount Entries",
+                category = DetectionCategory.MAGISK,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = "No Magisk-related mount entries found.",
+                detailedReason = "Luna-method (magiskmounts): /proc/self/mounts contains no known " +
+                    "Magisk-specific bind-mount or overlay markers.",
+                solution = "No action required."
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Luna: zygoteinject
+    // Checks the SELinux context of /proc/self/attr/current and related paths
+    // for evidence of Zygote injection by Magisk or LSPosed.
+    // Luna detects: attr_prev containing "zygote" → possible Magisk injection.
+    // Native Test: verifies /proc/self/attr/current, /mnt, /mnt/obb, /mnt/asec
+    // do NOT carry "zygote" / injected context without being untrusted_app.
+    // -------------------------------------------------------------------------
+    private fun checkZygoteInjection(): DetectionResult {
+        val suspicious = mutableListOf<String>()
+
+        try {
+            val attrFile = File("/proc/self/attr/current")
+            if (attrFile.canRead()) {
+                val ctx = attrFile.readText().trim().trimEnd('\u0000')
+                // A process injected via Zygote by Magisk may carry a context that
+                // references "zygote" but is no longer labeled as untrusted_app,
+                // indicating the SELinux label was altered post-fork.
+                if (ctx.contains("zygote", ignoreCase = true) &&
+                    !ctx.contains("untrusted_app")
+                ) {
+                    suspicious.add("/proc/self/attr/current: zygote-related context without untrusted_app ($ctx)")
+                }
+            }
+
+            // Also check /proc/self/attr/prev when readable — Magisk injection leaves
+            // the previous domain label in attr_prev containing "zygote".
+            val attrPrev = File("/proc/self/attr/prev")
+            if (attrPrev.canRead()) {
+                val prev = attrPrev.readText().trim().trimEnd('\u0000')
+                if (prev.contains("zygote", ignoreCase = true)) {
+                    suspicious.add("/proc/self/attr/prev: contains 'zygote' ($prev) — possible Magisk injection")
+                }
+            }
+        } catch (_: Exception) {}
+
+        return if (suspicious.isNotEmpty()) {
+            DetectionResult(
+                id = "luna_zygote_inject",
+                name = "Zygote Injection Detected",
+                category = DetectionCategory.MAGISK,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = "SELinux context indicates possible Zygote-level injection by Magisk/LSPosed.",
+                detailedReason = "Luna-method (zygoteinject): SELinux context analysis found: " +
+                    "${suspicious.joinToString("; ")}. " +
+                    "Magisk and LSPosed hook into Zygote to inject code into every new app process. " +
+                    "This leaves characteristic SELinux context traces in /proc/self/attr/.",
+                solution = "Uninstall Magisk and LSPosed, then verify SELinux policy is restored to stock.",
+                technicalDetail = suspicious.joinToString("; ")
+            )
+        } else {
+            DetectionResult(
+                id = "luna_zygote_inject",
+                name = "Zygote Injection",
+                category = DetectionCategory.MAGISK,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = "No Zygote injection indicators found in SELinux contexts.",
+                detailedReason = "Luna-method (zygoteinject): /proc/self/attr/current and attr/prev " +
+                    "show no signs of Zygote-level injection.",
+                solution = "No action required."
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Native Test: tmpfsmount
+    // Native Test checks /mnt, /mnt/obb, /mnt/asec via fstatat() and compares
+    // their SELinux xattr (getxattr "security.selinux") against expected values
+    // u:object:tmpfs: / _r:tmpfs:sf / tmpfs:s0.
+    // Magisk uses private tmpfs mounts on these paths to isolate its namespace;
+    // the presence of a non-standard tmpfs context on them is suspicious.
+    // -------------------------------------------------------------------------
+    private fun checkTmpfsMountAnomaly(): DetectionResult {
+        val suspicious = mutableListOf<String>()
+
+        // Paths expected to be simple tmpfs directories with standard SELinux labels.
+        // Root frameworks (especially Magisk) mount private tmpfs namespaces here.
+        val checkPaths = listOf("/mnt/obb", "/mnt/asec", "/mnt")
+
+        try {
+            val mounts = File("/proc/self/mounts")
+            if (mounts.canRead()) {
+                val mountContent = mounts.readText()
+                for (path in checkPaths) {
+                    // A private tmpfs overlaid on these dirs by Magisk will appear
+                    // as a second "tmpfs <path>" entry that overrides the stock one.
+                    val matches = mountContent.lines().filter { line ->
+                        val parts = line.split(" ")
+                        parts.size >= 3 &&
+                            parts[1] == path &&
+                            parts[2].lowercase() == "tmpfs"
+                    }
+                    if (matches.size > 1) {
+                        suspicious.add("$path has ${matches.size} tmpfs mounts (expected 1) — possible Magisk private namespace")
+                    }
+                }
+            }
+
+            // Additionally check whether these directories are accessible at all —
+            // if Magisk has replaced them with an isolated tmpfs, readdir may behave
+            // differently than expected on a stock device.
+            for (path in listOf("/mnt/obb", "/mnt/asec")) {
+                val dir = File(path)
+                if (!dir.exists()) {
+                    suspicious.add("$path does not exist (unexpected on a standard Android system)")
+                }
+            }
+        } catch (_: Exception) {}
+
+        return if (suspicious.isNotEmpty()) {
+            DetectionResult(
+                id = "luna_tmpfs_mount",
+                name = "Tmpfs Mount Anomaly Detected",
+                category = DetectionCategory.MAGISK,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = "Suspicious tmpfs mounts detected on system mount points.",
+                detailedReason = "Native-Test-method (tmpfsmount): Anomalies found on /mnt/obb or /mnt/asec: " +
+                    "${suspicious.joinToString("; ")}. " +
+                    "Magisk creates private tmpfs namespaces on these paths to isolate its module overlays " +
+                    "from the global mount namespace, leaving multiple tmpfs entries for the same path.",
+                solution = "Uninstall Magisk and reboot to restore stock mount namespaces.",
+                technicalDetail = suspicious.joinToString("; ")
+            )
+        } else {
+            DetectionResult(
+                id = "luna_tmpfs_mount",
+                name = "Tmpfs Mount Anomaly",
+                category = DetectionCategory.MAGISK,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = "No suspicious tmpfs mount anomalies detected.",
+                detailedReason = "Native-Test-method (tmpfsmount): /mnt/obb and /mnt/asec mount entries " +
+                    "appear normal.",
                 solution = "No action required."
             )
         }

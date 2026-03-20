@@ -81,6 +81,10 @@ class GenericRootDetector(private val context: Context) {
             "/data/local/xbin/su",
             "/system/bin/.ext/su",
             "/system/usr/we-need-root/su",
+            "/system/sd/xbin/su",
+            "/system/bin/failsafe/su",
+            "/su/bin",
+            "/system/xbin/daemonsu",
             "/system/app/Superuser.apk",
             "/data/data/com.noshufou.android.su",
             "/data/data/com.thirdparty.superuser",
@@ -134,7 +138,9 @@ class GenericRootDetector(private val context: Context) {
             "com.koushikdutta.rommanager",
             "com.dimonvideo.luckypatcher",      // Lucky Patcher
             "com.chelpus.lackypatch",
-            "com.ramdroid.appquarantine"
+            "com.ramdroid.appquarantine",
+            "com.devadvance.rootcloak",         // RootCloak (root hiding)
+            "com.devadvance.rootcloakplus"      // RootCloak Plus (root hiding)
         )
         val found = rootApps.filter { packageExists(it) }
         return if (found.isNotEmpty()) {
