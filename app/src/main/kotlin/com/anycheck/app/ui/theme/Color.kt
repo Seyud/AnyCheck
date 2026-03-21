@@ -43,22 +43,39 @@ val SurfaceContainerLowest = Color(0xFFFFFFFF)
 val Outline = Color(0xFF767680)
 val OutlineVariant = Color(0xFFC7C5D0)
 
-// Risk level colors
-val RiskCritical = Color(0xFFB00020)
+// Risk level colors — Light theme
+val RiskCritical = Color(0xFFBA1A1A)
 val RiskCriticalContainer = Color(0xFFFFDAD6)
-val RiskHigh = Color(0xFFE64A19)
+val RiskHigh = Color(0xFFBF360C)
 val RiskHighContainer = Color(0xFFFFEDE8)
-val RiskMedium = Color(0xFFF57C00)
+val RiskMedium = Color(0xFFBF6000)
 val RiskMediumContainer = Color(0xFFFFEDD1)
-val RiskLow = Color(0xFF388E3C)
+val RiskLow = Color(0xFF2E7D32)
 val RiskLowContainer = Color(0xFFE8F5E9)
 val RiskInfo = Color(0xFF0277BD)
 val RiskInfoContainer = Color(0xFFE1F5FE)
 
-// Status colors
-val StatusDetected = Color(0xFFB00020)
-val StatusNotDetected = Color(0xFF388E3C)
+// Risk level colors — Dark theme (lighter, high-contrast on dark backgrounds)
+val RiskCriticalDark = Color(0xFFFFB4AB)
+val RiskCriticalContainerDark = Color(0xFF690005)
+val RiskHighDark = Color(0xFFFFB59A)
+val RiskHighContainerDark = Color(0xFF5C1700)
+val RiskMediumDark = Color(0xFFFFB95A)
+val RiskMediumContainerDark = Color(0xFF5C3800)
+val RiskLowDark = Color(0xFF81C784)
+val RiskLowContainerDark = Color(0xFF0A3D0E)
+val RiskInfoDark = Color(0xFF82CAFF)
+val RiskInfoContainerDark = Color(0xFF003E5A)
+
+// Status colors — Light theme
+val StatusDetected = Color(0xFFBA1A1A)
+val StatusNotDetected = Color(0xFF2E7D32)
 val StatusError = Color(0xFF795548)
+
+// Status colors — Dark theme
+val StatusDetectedDark = Color(0xFFFFB4AB)
+val StatusNotDetectedDark = Color(0xFF81C784)
+val StatusErrorDark = Color(0xFFBCAAA4)
 
 // Dark theme
 val PrimaryDark = Color(0xFFB8C3FF)

@@ -37,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,17 +58,30 @@ import com.anycheck.app.detection.DetectionStatus
 import com.anycheck.app.detection.RiskLevel
 import com.anycheck.app.ui.theme.RiskCritical
 import com.anycheck.app.ui.theme.RiskCriticalContainer
+import com.anycheck.app.ui.theme.RiskCriticalContainerDark
+import com.anycheck.app.ui.theme.RiskCriticalDark
 import com.anycheck.app.ui.theme.RiskHigh
 import com.anycheck.app.ui.theme.RiskHighContainer
+import com.anycheck.app.ui.theme.RiskHighContainerDark
+import com.anycheck.app.ui.theme.RiskHighDark
 import com.anycheck.app.ui.theme.RiskInfo
 import com.anycheck.app.ui.theme.RiskInfoContainer
+import com.anycheck.app.ui.theme.RiskInfoContainerDark
+import com.anycheck.app.ui.theme.RiskInfoDark
 import com.anycheck.app.ui.theme.RiskLow
 import com.anycheck.app.ui.theme.RiskLowContainer
+import com.anycheck.app.ui.theme.RiskLowContainerDark
+import com.anycheck.app.ui.theme.RiskLowDark
 import com.anycheck.app.ui.theme.RiskMedium
 import com.anycheck.app.ui.theme.RiskMediumContainer
+import com.anycheck.app.ui.theme.RiskMediumContainerDark
+import com.anycheck.app.ui.theme.RiskMediumDark
 import com.anycheck.app.ui.theme.StatusDetected
+import com.anycheck.app.ui.theme.StatusDetectedDark
 import com.anycheck.app.ui.theme.StatusError
+import com.anycheck.app.ui.theme.StatusErrorDark
 import com.anycheck.app.ui.theme.StatusNotDetected
+import com.anycheck.app.ui.theme.StatusNotDetectedDark
 
 @Composable
 fun DetectionResultCard(
@@ -182,7 +196,7 @@ fun DetectionResultCard(
                             icon = Icons.AutoMirrored.Filled.HelpOutline,
                             title = "Solution",
                             content = result.solution,
-                            iconTint = RiskLow
+                            iconTint = if (isSystemInDarkTheme()) RiskLowDark else RiskLow
                         )
                     }
 
@@ -278,22 +292,24 @@ private fun TechnicalDetailBox(detail: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun CategoryBadge(category: DetectionCategory, modifier: Modifier = Modifier) {
-    val (text, color) = when (category) {
-        DetectionCategory.MAGISK -> "Magisk" to Color(0xFF4A55A2)
-        DetectionCategory.KERNELSU -> "KernelSU" to Color(0xFF00796B)
-        DetectionCategory.APATCH -> "APatch" to Color(0xFF6A1B9A)
-        DetectionCategory.SU_BINARY -> "SU Binary" to Color(0xFFE65100)
-        DetectionCategory.ROOT_MANAGEMENT -> "Root" to Color(0xFF37474F)
-        DetectionCategory.XPOSED -> "Xposed" to Color(0xFFC62828)
-        DetectionCategory.SYSTEM_INTEGRITY -> "System" to Color(0xFF0277BD)
-        DetectionCategory.ADB_DEBUG -> "ADB/Debug" to Color(0xFF558B2F)
-        DetectionCategory.FRIDA -> "Frida" to Color(0xFF6D4C41)
-        DetectionCategory.ENVIRONMENT -> "Environment" to Color(0xFF00838F)
-        DetectionCategory.NETWORK -> "Network" to Color(0xFF1565C0)
+    val isDark = isSystemInDarkTheme()
+    val (text, lightColor, darkColor) = when (category) {
+        DetectionCategory.MAGISK -> Triple("Magisk", Color(0xFF4A55A2), Color(0xFFB8C3FF))
+        DetectionCategory.KERNELSU -> Triple("KernelSU", Color(0xFF00796B), Color(0xFF80CBC4))
+        DetectionCategory.APATCH -> Triple("APatch", Color(0xFF6A1B9A), Color(0xFFCE93D8))
+        DetectionCategory.SU_BINARY -> Triple("SU Binary", Color(0xFFBF360C), Color(0xFFFFAB91))
+        DetectionCategory.ROOT_MANAGEMENT -> Triple("Root", Color(0xFF37474F), Color(0xFF90A4AE))
+        DetectionCategory.XPOSED -> Triple("Xposed", Color(0xFFC62828), Color(0xFFEF9A9A))
+        DetectionCategory.SYSTEM_INTEGRITY -> Triple("System", Color(0xFF0277BD), Color(0xFF81D4FA))
+        DetectionCategory.ADB_DEBUG -> Triple("ADB/Debug", Color(0xFF33691E), Color(0xFFAED581))
+        DetectionCategory.FRIDA -> Triple("Frida", Color(0xFF4E342E), Color(0xFFBCAAA4))
+        DetectionCategory.ENVIRONMENT -> Triple("Environment", Color(0xFF00695C), Color(0xFF80CBC4))
+        DetectionCategory.NETWORK -> Triple("Network", Color(0xFF1565C0), Color(0xFF90CAF9))
     }
+    val color = if (isDark) darkColor else lightColor
     Surface(
         shape = RoundedCornerShape(4.dp),
-        color = color.copy(alpha = 0.15f),
+        color = color.copy(alpha = if (isDark) 0.20f else 0.15f),
         modifier = modifier
     ) {
         Text(
@@ -317,7 +333,7 @@ fun RiskBadge(riskLevel: RiskLevel, color: Color, modifier: Modifier = Modifier)
     }
     Surface(
         shape = RoundedCornerShape(4.dp),
-        color = color.copy(alpha = 0.12f),
+        color = color.copy(alpha = 0.15f),
         modifier = modifier
     ) {
         Text(
@@ -330,16 +346,24 @@ fun RiskBadge(riskLevel: RiskLevel, color: Color, modifier: Modifier = Modifier)
     }
 }
 
-fun riskColors(riskLevel: RiskLevel): Pair<Color, Color> = when (riskLevel) {
-    RiskLevel.CRITICAL -> RiskCritical to RiskCriticalContainer
-    RiskLevel.HIGH -> RiskHigh to RiskHighContainer
-    RiskLevel.MEDIUM -> RiskMedium to RiskMediumContainer
-    RiskLevel.LOW -> RiskLow to RiskLowContainer
-    RiskLevel.INFO -> RiskInfo to RiskInfoContainer
+@Composable
+fun riskColors(riskLevel: RiskLevel): Pair<Color, Color> {
+    val isDark = isSystemInDarkTheme()
+    return when (riskLevel) {
+        RiskLevel.CRITICAL -> if (isDark) RiskCriticalDark to RiskCriticalContainerDark else RiskCritical to RiskCriticalContainer
+        RiskLevel.HIGH -> if (isDark) RiskHighDark to RiskHighContainerDark else RiskHigh to RiskHighContainer
+        RiskLevel.MEDIUM -> if (isDark) RiskMediumDark to RiskMediumContainerDark else RiskMedium to RiskMediumContainer
+        RiskLevel.LOW -> if (isDark) RiskLowDark to RiskLowContainerDark else RiskLow to RiskLowContainer
+        RiskLevel.INFO -> if (isDark) RiskInfoDark to RiskInfoContainerDark else RiskInfo to RiskInfoContainer
+    }
 }
 
-fun statusStyle(status: DetectionStatus): Pair<Color, ImageVector> = when (status) {
-    DetectionStatus.DETECTED -> StatusDetected to Icons.Default.Error
-    DetectionStatus.NOT_DETECTED -> StatusNotDetected to Icons.Default.CheckCircle
-    DetectionStatus.ERROR -> StatusError to Icons.Default.Warning
+@Composable
+fun statusStyle(status: DetectionStatus): Pair<Color, ImageVector> {
+    val isDark = isSystemInDarkTheme()
+    return when (status) {
+        DetectionStatus.DETECTED -> (if (isDark) StatusDetectedDark else StatusDetected) to Icons.Default.Error
+        DetectionStatus.NOT_DETECTED -> (if (isDark) StatusNotDetectedDark else StatusNotDetected) to Icons.Default.CheckCircle
+        DetectionStatus.ERROR -> (if (isDark) StatusErrorDark else StatusError) to Icons.Default.Warning
+    }
 }

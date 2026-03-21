@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,7 +69,9 @@ import com.anycheck.app.detection.DetectionSummary
 import com.anycheck.app.detection.RiskLevel
 import com.anycheck.app.ui.components.DetectionResultCard
 import com.anycheck.app.ui.theme.RiskCritical
+import com.anycheck.app.ui.theme.RiskCriticalDark
 import com.anycheck.app.ui.theme.RiskLow
+import com.anycheck.app.ui.theme.RiskLowDark
 import kotlinx.coroutines.launch
 
 enum class ResultFilter {
@@ -415,6 +418,9 @@ private fun ResultsScreen(
 @Composable
 private fun SummaryCard(summary: DetectionSummary, modifier: Modifier = Modifier) {
     val overallSafe = summary.detectedCount == 0
+    val isDark = isSystemInDarkTheme()
+    val riskCriticalColor = if (isDark) RiskCriticalDark else RiskCritical
+    val riskLowColor = if (isDark) RiskLowDark else RiskLow
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -462,12 +468,12 @@ private fun SummaryCard(summary: DetectionSummary, modifier: Modifier = Modifier
                 SummaryStatItem(
                     count = summary.detectedCount,
                     label = "Detected",
-                    color = if (summary.detectedCount > 0) RiskCritical else MaterialTheme.colorScheme.outline
+                    color = if (summary.detectedCount > 0) riskCriticalColor else MaterialTheme.colorScheme.outline
                 )
                 SummaryStatItem(
                     count = summary.safeCount,
                     label = "Safe",
-                    color = RiskLow
+                    color = riskLowColor
                 )
                 SummaryStatItem(
                     count = summary.errorCount,
@@ -526,6 +532,9 @@ private fun FrameworkStatusChip(
     detected: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
+    val detectedTextColor = if (isDark) RiskCriticalDark else RiskCritical
+    val safeTextColor = if (isDark) RiskLowDark else RiskLow
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = if (detected)
@@ -552,7 +561,7 @@ private fun FrameworkStatusChip(
                 text = if (detected) "DETECTED" else "CLEAN",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (detected) RiskCritical else RiskLow
+                color = if (detected) detectedTextColor else safeTextColor
             )
         }
     }
