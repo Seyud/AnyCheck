@@ -23,7 +23,7 @@ import java.io.InputStreamReader
  *  - magiskmounts     → /proc/mounts Magisk bind-mount / overlayfs detection
  *  - zygoteinject     → Zygote injection via SELinux context inspection
  *  - tmpfsmount       → tmpfs SELinux context anomaly on /mnt/obb and /mnt/asec
- *  - procscan         → /proc cmdline scan for dex2oat/APatch/lsposed/shamiko + mountinfo overlay
+ *  - procscan         → /proc cmdline scan for APatch/lsposed/shamiko + root-linked overlayfs only
  *  - roots            → root binary and /data/adb file existence
  *  - kernels/tests    → /proc/version custom-kernel string + boot cmdline
  *  - findauth         → /data/local/tmp/attestation file presence
@@ -643,7 +643,18 @@ class LunaDetector(private val context: Context) {
     // -------------------------------------------------------------------------
     // Luna: procscan
     // Scans /proc/<pid>/cmdline for root framework processes (APatch, lsposed,
-    // _magisk, shamiko, zygiskd) and /proc/self/mountinfo for overlayfs entries.
+    // _magisk, shamiko, zygiskd) and /proc/self/mountinfo for *suspicious*
+    // overlayfs entries.
+    //
+    // False-positive note: Android uses overlayfs legitimately for APEX packages
+    // (/apex/com.android.*), vendor/product RRO themes, and OEM system mounts.
+    // We only flag an overlay mount when it meets at least one of these criteria:
+    //   1. Its superblock options (lowerdir= / upperdir=) reference known root-tool
+    //      working directories (/data/adb/, /magisk/, /sbin/.core, @ksu).
+    //   2. It is mounted on a system path (/system, /vendor, /product, /sbin) and
+    //      is NOT an APEX or RRO path — i.e., it has a non-empty lowerdir that
+    //      doesn't point exclusively to read-only system partitions.
+    // Both APEX overlays and system RRO overlays are explicitly whitelisted.
     // -------------------------------------------------------------------------
     private fun checkProcScan(): DetectionResult {
         val suspiciousProcs = listOf("APatch", "lsposed", "_magisk", "shamiko", "zygiskd", "magiskd")
@@ -676,12 +687,8 @@ class LunaDetector(private val context: Context) {
             val mountInfo = File("/proc/self/mountinfo")
             if (mountInfo.canRead()) {
                 for (line in mountInfo.readLines()) {
-                    if (line.contains("overlay", ignoreCase = true) ||
-                        line.contains("lowerdir=", ignoreCase = true)
-                    ) {
-                        val mountPoint = line.split(" ").getOrElse(4) { "?" }
-                        if (!foundOverlay.contains(mountPoint)) foundOverlay.add(mountPoint)
-                    }
+                    val mp = parseSuspiciousOverlayMount(line)
+                    if (mp != null && !foundOverlay.contains(mp)) foundOverlay.add(mp)
                 }
             }
         } catch (_: Exception) {}
@@ -690,29 +697,110 @@ class LunaDetector(private val context: Context) {
         return if (all.isNotEmpty()) {
             DetectionResult(
                 id = "luna_procscan",
-                name = "Suspicious Processes / Overlay Mounts",
+                name = "Suspicious Processes / Root Overlay Mounts",
                 category = DetectionCategory.MAGISK,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Root framework processes or overlayfs mounts found.",
+                description = "Root framework processes or root-linked overlayfs mounts found.",
                 detailedReason = "Luna-method (procscan): /proc/<pid>/cmdline and /proc/self/mountinfo " +
-                    "revealed: ${all.joinToString(", ")}.",
+                    "revealed: ${all.joinToString(", ")}. " +
+                    "Only overlays whose lowerdir/upperdir point to root-tool paths (e.g. /data/adb, /magisk) " +
+                    "or that cover system paths outside APEX/RRO are flagged.",
                 solution = "Uninstall root frameworks and reboot.",
                 technicalDetail = all.joinToString("; ")
             )
         } else {
             DetectionResult(
                 id = "luna_procscan",
-                name = "Process / Overlay Scan",
+                name = "Process / Root Overlay Scan",
                 category = DetectionCategory.MAGISK,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "No suspicious root processes or overlay mounts found.",
+                description = "No suspicious root processes or root-linked overlay mounts found.",
                 detailedReason = "Luna-method (procscan): No known root process names in /proc and no " +
-                    "unexpected overlayfs entries in mountinfo.",
+                    "root-tool-linked overlayfs entries in mountinfo.",
                 solution = "No action required."
             )
         }
+    }
+
+    /**
+     * Parses a single /proc/self/mountinfo line and returns the mount point string
+     * if — and only if — it represents a *suspicious* overlayfs mount.
+     *
+     * Mountinfo format (space-separated):
+     *   mount_id  parent_id  major:minor  root  mount_point  mount_opts
+     *   [optional tagged fields...]  -  fs_type  mount_source  super_opts
+     *
+     * Legitimate (whitelisted) overlay mounts on clean Android:
+     *   • /apex/com.android.*          — APEX package overlays
+     *   • /system/overlay              — System RRO (Runtime Resource Overlay)
+     *   • /vendor/overlay              — Vendor RRO
+     *   • /product/overlay             — Product RRO
+     *   • /system_ext/overlay          — SystemExt RRO
+     *   • /odm/overlay                 — ODM RRO
+     *
+     * Suspicious overlays are those where either:
+     *   (a) superblock options contain root-tool working paths in lowerdir=/upperdir=
+     *   (b) mount point covers a system partition AND lowerdir has a non-system source
+     *       (i.e., Magisk modules redirecting /system reads through /data/adb/modules)
+     */
+    private fun parseSuspiciousOverlayMount(line: String): String? {
+        val parts = line.split(" ")
+
+        // Locate the "-" separator between optional fields and fs info
+        val dashIdx = parts.indexOf("-")
+        if (dashIdx < 0) return null
+
+        val fsType = parts.getOrNull(dashIdx + 1) ?: return null
+        if (!fsType.equals("overlay", ignoreCase = true)) return null
+
+        val mountPoint = parts.getOrNull(4) ?: return null
+        val superOpts = parts.getOrNull(dashIdx + 3) ?: ""
+
+        // --- Whitelist: known-legitimate overlay mount point prefixes --------
+        val systemOverlayWhitelist = listOf(
+            "/apex/",
+            "/system/overlay", "/vendor/overlay", "/product/overlay",
+            "/system_ext/overlay", "/odm/overlay", "/oem/overlay"
+        )
+        if (systemOverlayWhitelist.any { mountPoint.startsWith(it) }) return null
+
+        // --- Root-tool path markers in lowerdir / upperdir -------------------
+        val rootToolPathMarkers = listOf(
+            "/data/adb/", "/magisk/", "/sbin/.core", "@ksu",
+            "/data/local/tmp/magisk", "worker/upper/data"
+        )
+        if (rootToolPathMarkers.any { superOpts.contains(it, ignoreCase = true) }) {
+            return "$mountPoint (lowerdir contains root-tool path)"
+        }
+
+        // --- Overlay on a system partition with a non-system lowerdir --------
+        // Magisk mounts modules as overlays on top of /system, /vendor, /product.
+        // The lowerdir on a clean device only references read-only system paths;
+        // if it contains /data or other writable-partition paths, that is suspicious.
+        val systemMountPrefixes = listOf("/system", "/vendor", "/product", "/sbin", "/odm")
+        if (systemMountPrefixes.any { mountPoint == it || mountPoint.startsWith("$it/") }) {
+            val lowerDirValue = superOpts
+                .split(",")
+                .firstOrNull { it.startsWith("lowerdir=") }
+                ?.removePrefix("lowerdir=") ?: ""
+            // If any lowerdir component is outside the read-only system partitions,
+            // it has likely been injected by a root framework.
+            val suspiciousLower = lowerDirValue.split(":").any { component ->
+                component.isNotEmpty() &&
+                    !component.startsWith("/system") &&
+                    !component.startsWith("/vendor") &&
+                    !component.startsWith("/product") &&
+                    !component.startsWith("/odm") &&
+                    !component.startsWith("/apex")
+            }
+            if (suspiciousLower) {
+                return "$mountPoint (non-system lowerdir: ${lowerDirValue.take(80)})"
+            }
+        }
+
+        return null
     }
 
     // -------------------------------------------------------------------------
