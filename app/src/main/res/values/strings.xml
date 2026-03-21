@@ -768,4 +768,169 @@
     <string name="chk_lspd_process_reason_nd">No process named \'lspd\' was found in /proc.</string>
     <string name="chk_lspd_process_solution">Uninstall LSPosed via its manager app and reboot to stop the daemon.</string>
 
+
+    <!-- AdvancedRootDetector strings -->
+    <string name="chk_adv_su_path_name">Su Binary Found</string>
+    <string name="chk_adv_su_path_name_nd">Su Binary Check</string>
+    <string name="chk_adv_su_path_desc">A su binary was found on the device.</string>
+    <string name="chk_adv_su_path_desc_nd">No su binary found in standard locations.</string>
+    <string name="chk_adv_su_path_reason">Found at: %1$s</string>
+    <string name="chk_adv_su_path_reason_nd">No su binary found in the checked locations.</string>
+    <string name="chk_adv_su_path_solution">Remove the su binary from the reported path.</string>
+
+    <string name="chk_adv_rw_sys_name">System Partition Mounted Read-Write</string>
+    <string name="chk_adv_rw_sys_desc">One or more system partitions are mounted read-write.</string>
+    <string name="chk_adv_rw_sys_desc_nd">System partitions are mounted read-only.</string>
+    <string name="chk_adv_rw_sys_desc_error">Could not check system mount flags.</string>
+    <string name="chk_adv_rw_sys_reason">Read-write mount points: %1$s. System partitions should be mounted read-only on secure devices.</string>
+    <string name="chk_adv_rw_sys_reason_nd">All checked system partitions are mounted read-only.</string>
+    <string name="chk_adv_rw_sys_solution">Remount system partitions as read-only or restore factory image.</string>
+    <string name="chk_adv_rw_sys_solution_error">Verify mount flags manually via adb shell mount.</string>
+
+    <string name="chk_adv_bootloader_name">Bootloader Unlocked</string>
+    <string name="chk_adv_bootloader_name_nd">Bootloader Lock Status</string>
+    <string name="chk_adv_bootloader_desc">The bootloader appears to be unlocked.</string>
+    <string name="chk_adv_bootloader_desc_nd">No bootloader unlock indicators found.</string>
+    <string name="chk_adv_bootloader_reason">Indicators: %1$s</string>
+    <string name="chk_adv_bootloader_reason_nd">No bootloader unlock indicators were detected.</string>
+    <string name="chk_adv_bootloader_solution">Re-lock the bootloader via OEM/fastboot if possible.</string>
+
+    <string name="chk_adv_dm_verity_name">dm-verity Disabled</string>
+    <string name="chk_adv_dm_verity_name_nd">dm-verity Status</string>
+    <string name="chk_adv_dm_verity_desc">dm-verity is disabled, allowing system partition modification.</string>
+    <string name="chk_adv_dm_verity_desc_nd">dm-verity appears to be enabled.</string>
+    <string name="chk_adv_dm_verity_reason">Indicators: %1$s. dm-verity verifies system partition integrity on boot.</string>
+    <string name="chk_adv_dm_verity_reason_nd">No dm-verity disable indicators detected.</string>
+    <string name="chk_adv_dm_verity_solution">Re-enable dm-verity via fastboot or restore the factory image.</string>
+
+    <string name="chk_adv_dang_props_name">Dangerous System Properties Set</string>
+    <string name="chk_adv_dang_props_name_nd">Dangerous System Properties</string>
+    <string name="chk_adv_dang_props_desc">Dangerous system properties associated with root or debugging are set.</string>
+    <string name="chk_adv_dang_props_desc_nd">No dangerous system properties detected.</string>
+    <string name="chk_adv_dang_props_reason">Found: %1$s</string>
+    <string name="chk_adv_dang_props_reason_nd">No dangerous system properties were found.</string>
+    <string name="chk_adv_dang_props_solution">Remove or unset the dangerous properties and reboot.</string>
+
+    <string name="chk_adv_dev_opts_name">Developer Options Enabled</string>
+    <string name="chk_adv_dev_opts_desc">Android Developer Options are enabled on this device.</string>
+    <string name="chk_adv_dev_opts_desc_nd">Developer Options are disabled.</string>
+    <string name="chk_adv_dev_opts_desc_error">Could not determine Developer Options status.</string>
+    <string name="chk_adv_dev_opts_reason">The Developer Options setting is enabled (value=1).</string>
+    <string name="chk_adv_dev_opts_reason_nd">Developer Options setting is disabled (value=0).</string>
+    <string name="chk_adv_dev_opts_solution">Disable via Settings &#8594; System &#8594; Developer Options &#8594; toggle off.</string>
+    <string name="chk_adv_dev_opts_solution_error">Check manually in Settings &#8594; System &#8594; Developer Options.</string>
+
+    <string name="chk_adv_adb_name">ADB Debugging Enabled</string>
+    <string name="chk_adv_adb_desc">USB debugging (ADB) is enabled on this device.</string>
+    <string name="chk_adv_adb_desc_nd">ADB debugging is disabled.</string>
+    <string name="chk_adv_adb_desc_error">Could not determine ADB status.</string>
+    <string name="chk_adv_adb_reason">The adb_enabled setting is enabled (value=1).</string>
+    <string name="chk_adv_adb_reason_nd">ADB debugging is not enabled (value=0).</string>
+    <string name="chk_adv_adb_solution">Disable via Settings &#8594; Developer Options &#8594; USB Debugging &#8594; toggle off.</string>
+    <string name="chk_adv_adb_solution_error">Check manually in Settings &#8594; Developer Options.</string>
+
+    <string name="chk_adv_frida_proc_name">Frida Server Process Detected</string>
+    <string name="chk_adv_frida_proc_desc">A Frida server process is running on this device.</string>
+    <string name="chk_adv_frida_proc_desc_nd">No Frida server process detected.</string>
+    <string name="chk_adv_frida_proc_desc_error">Could not scan processes for Frida.</string>
+    <string name="chk_adv_frida_proc_reason">Frida processes found: %1$s</string>
+    <string name="chk_adv_frida_proc_reason_nd">No Frida server processes found in /proc.</string>
+    <string name="chk_adv_frida_proc_solution">Kill and uninstall frida-server from the device.</string>
+    <string name="chk_adv_frida_proc_solution_error">Verify manually using adb shell ps.</string>
+
+    <string name="chk_adv_frida_port_name">Frida Default Port Open</string>
+    <string name="chk_adv_frida_port_name_nd">Frida Default Port Check</string>
+    <string name="chk_adv_frida_port_desc">Frida's default port (27042) is open on this device.</string>
+    <string name="chk_adv_frida_port_desc_nd">Frida's default port is not open.</string>
+    <string name="chk_adv_frida_port_reason">Port 27042 is open — this is the default Frida server port.</string>
+    <string name="chk_adv_frida_port_reason_nd">Port 27042 is not open.</string>
+    <string name="chk_adv_frida_port_solution">Kill frida-server and remove it from the device.</string>
+
+    <string name="chk_adv_frida_files_name">Frida Files Found</string>
+    <string name="chk_adv_frida_files_name_nd">Frida Files Check</string>
+    <string name="chk_adv_frida_files_desc">Frida-related files were found on the filesystem.</string>
+    <string name="chk_adv_frida_files_desc_nd">No Frida-related files found.</string>
+    <string name="chk_adv_frida_files_reason">Found: %1$s</string>
+    <string name="chk_adv_frida_files_reason_nd">No Frida files found in the checked locations.</string>
+    <string name="chk_adv_frida_files_solution">Delete the Frida files and remove frida-server from the device.</string>
+
+    <string name="chk_adv_riru_name">Riru (Riru Core) Detected</string>
+    <string name="chk_adv_riru_name_nd">Riru Module Check</string>
+    <string name="chk_adv_riru_desc">Riru (Riru Core) injection framework is present.</string>
+    <string name="chk_adv_riru_desc_nd">No Riru framework files detected.</string>
+    <string name="chk_adv_riru_reason">Found Riru indicators: %1$s</string>
+    <string name="chk_adv_riru_reason_nd">No Riru-related files or processes were found.</string>
+    <string name="chk_adv_riru_solution">Remove the Riru module via Magisk Manager and reboot.</string>
+
+    <string name="chk_adv_twrp_name">Custom Recovery Detected</string>
+    <string name="chk_adv_twrp_name_nd">Custom Recovery Check</string>
+    <string name="chk_adv_twrp_desc">A custom recovery (TWRP or similar) is installed.</string>
+    <string name="chk_adv_twrp_desc_nd">No custom recovery indicators found.</string>
+    <string name="chk_adv_twrp_reason">Custom recovery indicators: %1$s</string>
+    <string name="chk_adv_twrp_reason_nd">No custom recovery indicators were detected.</string>
+    <string name="chk_adv_twrp_solution">Flash the stock recovery and re-lock the bootloader.</string>
+
+    <string name="chk_adv_emulator_name">Emulator Detected</string>
+    <string name="chk_adv_emulator_name_nd">Emulator Check</string>
+    <string name="chk_adv_emulator_desc">This device appears to be running in an emulator.</string>
+    <string name="chk_adv_emulator_desc_nd">No emulator indicators detected.</string>
+    <string name="chk_adv_emulator_reason">Emulator indicators: %1$s</string>
+    <string name="chk_adv_emulator_reason_nd">No emulator-related properties or files were found.</string>
+    <string name="chk_adv_emulator_solution">Run the app on a physical device instead of an emulator.</string>
+
+    <string name="chk_adv_inj_libs_name">Injected Libraries Detected</string>
+    <string name="chk_adv_inj_libs_desc">Suspicious libraries are mapped into this process.</string>
+    <string name="chk_adv_inj_libs_desc_nd">No injected libraries detected in process memory.</string>
+    <string name="chk_adv_inj_libs_desc_error">Could not read process memory maps.</string>
+    <string name="chk_adv_inj_libs_reason">Suspicious paths: %1$s</string>
+    <string name="chk_adv_inj_libs_reason_nd">No suspicious library paths found in /proc/self/maps.</string>
+    <string name="chk_adv_inj_libs_solution">Remove the hooking framework or injected library.</string>
+    <string name="chk_adv_inj_libs_solution_error">Check /proc/self/maps manually for suspicious entries.</string>
+
+    <string name="chk_adv_zygisk_sock_name">Zygisk Companion Socket Detected</string>
+    <string name="chk_adv_zygisk_sock_name_nd">Zygisk Companion Socket</string>
+    <string name="chk_adv_zygisk_sock_desc">Zygisk companion sockets were found in the abstract socket namespace.</string>
+    <string name="chk_adv_zygisk_sock_desc_nd">No Zygisk companion sockets found.</string>
+    <string name="chk_adv_zygisk_sock_desc_error">Could not scan abstract socket namespace.</string>
+    <string name="chk_adv_zygisk_sock_reason">Sockets found: %1$s. Zygisk creates abstract sockets for IPC between the companion process and injected code.</string>
+    <string name="chk_adv_zygisk_sock_reason_nd">No Zygisk socket names found in /proc/net/unix.</string>
+    <string name="chk_adv_zygisk_sock_solution">Disable Zygisk in Magisk settings and reboot.</string>
+    <string name="chk_adv_zygisk_sock_solution_error">Check /proc/net/unix manually for Zygisk socket entries.</string>
+
+    <string name="chk_adv_mgsk_mods_name">Magisk Modules Detected</string>
+    <string name="chk_adv_mgsk_mods_desc">Active Magisk modules were found on this device.</string>
+    <string name="chk_adv_mgsk_mods_desc_nd">No active Magisk modules found.</string>
+    <string name="chk_adv_mgsk_mods_desc_nodir">The Magisk modules directory does not exist.</string>
+    <string name="chk_adv_mgsk_mods_reason">Active modules: %1$s</string>
+    <string name="chk_adv_mgsk_mods_reason_nd">No enabled module directories found in /data/adb/modules/.</string>
+    <string name="chk_adv_mgsk_mods_reason_nodir">The /data/adb/modules/ directory does not exist — Magisk is likely not installed.</string>
+    <string name="chk_adv_mgsk_mods_solution">Remove or disable Magisk modules via Magisk Manager.</string>
+
+    <string name="chk_adv_debugger_name">Debugger Attached</string>
+    <string name="chk_adv_debugger_name_nd">Debugger Attach Check</string>
+    <string name="chk_adv_debugger_desc">A debugger is attached to this process.</string>
+    <string name="chk_adv_debugger_desc_nd">No debugger is attached to this process.</string>
+    <string name="chk_adv_debugger_desc_error">Could not read process status to check for debugger.</string>
+    <string name="chk_adv_debugger_reason">TracerPid=%1$d — a non-zero TracerPid in /proc/self/status indicates a debugger is attached.</string>
+    <string name="chk_adv_debugger_reason_nd">TracerPid=0 — no debugger attached.</string>
+    <string name="chk_adv_debugger_solution">Detach the debugger and do not run the app under a debugger.</string>
+    <string name="chk_adv_debugger_solution_error">Check /proc/self/status TracerPid manually.</string>
+
+    <string name="chk_adv_cloaking_name">Root Cloaking Detected</string>
+    <string name="chk_adv_cloaking_name_nd">Root Cloaking Check</string>
+    <string name="chk_adv_cloaking_desc">Root-cloaking software (MagiskHide, Shamiko, etc.) is active.</string>
+    <string name="chk_adv_cloaking_desc_nd">No root cloaking indicators detected.</string>
+    <string name="chk_adv_cloaking_reason">Cloaking indicators: %1$s</string>
+    <string name="chk_adv_cloaking_reason_nd">No root cloaking indicators were found.</string>
+    <string name="chk_adv_cloaking_solution">Disable MagiskHide/DenyList or remove cloaking modules and reboot.</string>
+
+    <string name="chk_adv_kern_mods_name">Root Kernel Modules Loaded</string>
+    <string name="chk_adv_kern_mods_desc">Suspicious kernel modules associated with root are loaded.</string>
+    <string name="chk_adv_kern_mods_desc_nd">No suspicious kernel modules found.</string>
+    <string name="chk_adv_kern_mods_desc_error">Could not read kernel module list.</string>
+    <string name="chk_adv_kern_mods_reason">Suspicious modules: %1$s</string>
+    <string name="chk_adv_kern_mods_reason_nd">No suspicious kernel modules found in /proc/modules.</string>
+    <string name="chk_adv_kern_mods_solution">Remove or unload the suspicious kernel modules and reboot.</string>
+    <string name="chk_adv_kern_mods_solution_error">Check /proc/modules manually for suspicious entries.</string>
+
 </resources>

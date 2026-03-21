@@ -769,4 +769,169 @@
     <string name="chk_lspd_process_reason_nd">在 /proc 中未发现名为 \'lspd\' 的进程。</string>
     <string name="chk_lspd_process_solution">通过其管理器应用卸载 LSPosed 并重启以停止守护进程。</string>
 
+
+    <!-- AdvancedRootDetector 字符串 -->
+    <string name="chk_adv_su_path_name">发现 Su 二进制文件</string>
+    <string name="chk_adv_su_path_name_nd">Su 二进制文件检查</string>
+    <string name="chk_adv_su_path_desc">在设备上发现了 su 二进制文件。</string>
+    <string name="chk_adv_su_path_desc_nd">在常见位置未发现 su 二进制文件。</string>
+    <string name="chk_adv_su_path_reason">在以下位置发现：%1$s</string>
+    <string name="chk_adv_su_path_reason_nd">在所检查的位置均未发现 su 二进制文件。</string>
+    <string name="chk_adv_su_path_solution">从报告的路径中删除 su 二进制文件。</string>
+
+    <string name="chk_adv_rw_sys_name">系统分区以读写方式挂载</string>
+    <string name="chk_adv_rw_sys_desc">一个或多个系统分区以读写方式挂载。</string>
+    <string name="chk_adv_rw_sys_desc_nd">系统分区以只读方式挂载。</string>
+    <string name="chk_adv_rw_sys_desc_error">无法检查系统挂载标志。</string>
+    <string name="chk_adv_rw_sys_reason">读写挂载点：%1$s。安全设备上系统分区应以只读方式挂载。</string>
+    <string name="chk_adv_rw_sys_reason_nd">所有已检查的系统分区均以只读方式挂载。</string>
+    <string name="chk_adv_rw_sys_solution">将系统分区重新挂载为只读，或恢复出厂镜像。</string>
+    <string name="chk_adv_rw_sys_solution_error">通过 adb shell mount 手动验证挂载标志。</string>
+
+    <string name="chk_adv_bootloader_name">Bootloader 已解锁</string>
+    <string name="chk_adv_bootloader_name_nd">Bootloader 锁定状态</string>
+    <string name="chk_adv_bootloader_desc">Bootloader 疑似已解锁。</string>
+    <string name="chk_adv_bootloader_desc_nd">未发现 Bootloader 解锁指标。</string>
+    <string name="chk_adv_bootloader_reason">指标：%1$s</string>
+    <string name="chk_adv_bootloader_reason_nd">未检测到 Bootloader 解锁指标。</string>
+    <string name="chk_adv_bootloader_solution">如可能，通过 OEM/fastboot 重新锁定 Bootloader。</string>
+
+    <string name="chk_adv_dm_verity_name">dm-verity 已禁用</string>
+    <string name="chk_adv_dm_verity_name_nd">dm-verity 状态</string>
+    <string name="chk_adv_dm_verity_desc">dm-verity 已禁用，允许修改系统分区。</string>
+    <string name="chk_adv_dm_verity_desc_nd">dm-verity 疑似已启用。</string>
+    <string name="chk_adv_dm_verity_reason">指标：%1$s。dm-verity 在启动时验证系统分区完整性。</string>
+    <string name="chk_adv_dm_verity_reason_nd">未检测到 dm-verity 禁用指标。</string>
+    <string name="chk_adv_dm_verity_solution">通过 fastboot 重新启用 dm-verity 或恢复出厂镜像。</string>
+
+    <string name="chk_adv_dang_props_name">发现危险系统属性</string>
+    <string name="chk_adv_dang_props_name_nd">危险系统属性</string>
+    <string name="chk_adv_dang_props_desc">与 Root 或调试相关的危险系统属性已被设置。</string>
+    <string name="chk_adv_dang_props_desc_nd">未检测到危险系统属性。</string>
+    <string name="chk_adv_dang_props_reason">发现：%1$s</string>
+    <string name="chk_adv_dang_props_reason_nd">未发现危险系统属性。</string>
+    <string name="chk_adv_dang_props_solution">删除或取消设置危险属性并重启。</string>
+
+    <string name="chk_adv_dev_opts_name">开发者选项已启用</string>
+    <string name="chk_adv_dev_opts_desc">此设备已启用 Android 开发者选项。</string>
+    <string name="chk_adv_dev_opts_desc_nd">开发者选项已禁用。</string>
+    <string name="chk_adv_dev_opts_desc_error">无法确定开发者选项状态。</string>
+    <string name="chk_adv_dev_opts_reason">开发者选项设置已启用（值=1）。</string>
+    <string name="chk_adv_dev_opts_reason_nd">开发者选项设置已禁用（值=0）。</string>
+    <string name="chk_adv_dev_opts_solution">通过 设置 → 系统 → 开发者选项 → 关闭 禁用。</string>
+    <string name="chk_adv_dev_opts_solution_error">在 设置 → 系统 → 开发者选项 中手动检查。</string>
+
+    <string name="chk_adv_adb_name">ADB 调试已启用</string>
+    <string name="chk_adv_adb_desc">此设备已启用 USB 调试（ADB）。</string>
+    <string name="chk_adv_adb_desc_nd">ADB 调试已禁用。</string>
+    <string name="chk_adv_adb_desc_error">无法确定 ADB 状态。</string>
+    <string name="chk_adv_adb_reason">adb_enabled 设置已启用（值=1）。</string>
+    <string name="chk_adv_adb_reason_nd">ADB 调试未启用（值=0）。</string>
+    <string name="chk_adv_adb_solution">通过 设置 → 开发者选项 → USB 调试 → 关闭 禁用。</string>
+    <string name="chk_adv_adb_solution_error">在 设置 → 开发者选项 中手动检查。</string>
+
+    <string name="chk_adv_frida_proc_name">检测到 Frida 服务进程</string>
+    <string name="chk_adv_frida_proc_desc">此设备正在运行 Frida 服务进程。</string>
+    <string name="chk_adv_frida_proc_desc_nd">未检测到 Frida 服务进程。</string>
+    <string name="chk_adv_frida_proc_desc_error">无法扫描进程以检查 Frida。</string>
+    <string name="chk_adv_frida_proc_reason">发现 Frida 进程：%1$s</string>
+    <string name="chk_adv_frida_proc_reason_nd">在 /proc 中未发现 Frida 服务进程。</string>
+    <string name="chk_adv_frida_proc_solution">终止并从设备卸载 frida-server。</string>
+    <string name="chk_adv_frida_proc_solution_error">使用 adb shell ps 手动验证。</string>
+
+    <string name="chk_adv_frida_port_name">Frida 默认端口开放</string>
+    <string name="chk_adv_frida_port_name_nd">Frida 默认端口检查</string>
+    <string name="chk_adv_frida_port_desc">Frida 的默认端口（27042）在此设备上开放。</string>
+    <string name="chk_adv_frida_port_desc_nd">Frida 的默认端口未开放。</string>
+    <string name="chk_adv_frida_port_reason">端口 27042 开放 — 这是 Frida 服务的默认端口。</string>
+    <string name="chk_adv_frida_port_reason_nd">端口 27042 未开放。</string>
+    <string name="chk_adv_frida_port_solution">终止 frida-server 并从设备中删除。</string>
+
+    <string name="chk_adv_frida_files_name">发现 Frida 相关文件</string>
+    <string name="chk_adv_frida_files_name_nd">Frida 文件检查</string>
+    <string name="chk_adv_frida_files_desc">在文件系统中发现了与 Frida 相关的文件。</string>
+    <string name="chk_adv_frida_files_desc_nd">未发现 Frida 相关文件。</string>
+    <string name="chk_adv_frida_files_reason">发现：%1$s</string>
+    <string name="chk_adv_frida_files_reason_nd">在所检查的位置未发现 Frida 文件。</string>
+    <string name="chk_adv_frida_files_solution">删除 Frida 文件并从设备中删除 frida-server。</string>
+
+    <string name="chk_adv_riru_name">检测到 Riru（Riru Core）</string>
+    <string name="chk_adv_riru_name_nd">Riru 模块检查</string>
+    <string name="chk_adv_riru_desc">Riru（Riru Core）注入框架存在。</string>
+    <string name="chk_adv_riru_desc_nd">未检测到 Riru 框架文件。</string>
+    <string name="chk_adv_riru_reason">发现 Riru 指标：%1$s</string>
+    <string name="chk_adv_riru_reason_nd">未发现 Riru 相关文件或进程。</string>
+    <string name="chk_adv_riru_solution">通过 Magisk Manager 移除 Riru 模块并重启。</string>
+
+    <string name="chk_adv_twrp_name">检测到自定义 Recovery</string>
+    <string name="chk_adv_twrp_name_nd">自定义 Recovery 检查</string>
+    <string name="chk_adv_twrp_desc">已安装自定义 Recovery（TWRP 或类似工具）。</string>
+    <string name="chk_adv_twrp_desc_nd">未发现自定义 Recovery 指标。</string>
+    <string name="chk_adv_twrp_reason">自定义 Recovery 指标：%1$s</string>
+    <string name="chk_adv_twrp_reason_nd">未检测到自定义 Recovery 指标。</string>
+    <string name="chk_adv_twrp_solution">刷入原厂 Recovery 并重新锁定 Bootloader。</string>
+
+    <string name="chk_adv_emulator_name">检测到模拟器</string>
+    <string name="chk_adv_emulator_name_nd">模拟器检查</string>
+    <string name="chk_adv_emulator_desc">此设备疑似在模拟器中运行。</string>
+    <string name="chk_adv_emulator_desc_nd">未检测到模拟器指标。</string>
+    <string name="chk_adv_emulator_reason">模拟器指标：%1$s</string>
+    <string name="chk_adv_emulator_reason_nd">未发现与模拟器相关的属性或文件。</string>
+    <string name="chk_adv_emulator_solution">在物理设备上运行应用，而非模拟器。</string>
+
+    <string name="chk_adv_inj_libs_name">检测到注入的库文件</string>
+    <string name="chk_adv_inj_libs_desc">可疑的库文件已映射到此进程中。</string>
+    <string name="chk_adv_inj_libs_desc_nd">未在进程内存中检测到注入的库文件。</string>
+    <string name="chk_adv_inj_libs_desc_error">无法读取进程内存映射。</string>
+    <string name="chk_adv_inj_libs_reason">可疑路径：%1$s</string>
+    <string name="chk_adv_inj_libs_reason_nd">在 /proc/self/maps 中未发现可疑库路径。</string>
+    <string name="chk_adv_inj_libs_solution">移除 Hook 框架或注入的库文件。</string>
+    <string name="chk_adv_inj_libs_solution_error">手动检查 /proc/self/maps 中的可疑条目。</string>
+
+    <string name="chk_adv_zygisk_sock_name">检测到 Zygisk Companion Socket</string>
+    <string name="chk_adv_zygisk_sock_name_nd">Zygisk Companion Socket</string>
+    <string name="chk_adv_zygisk_sock_desc">在抽象 Socket 命名空间中发现了 Zygisk Companion Socket。</string>
+    <string name="chk_adv_zygisk_sock_desc_nd">未发现 Zygisk Companion Socket。</string>
+    <string name="chk_adv_zygisk_sock_desc_error">无法扫描抽象 Socket 命名空间。</string>
+    <string name="chk_adv_zygisk_sock_reason">发现 Socket：%1$s。Zygisk 创建抽象 Socket 用于 Companion 进程与注入代码之间的 IPC 通信。</string>
+    <string name="chk_adv_zygisk_sock_reason_nd">在 /proc/net/unix 中未发现 Zygisk Socket 名称。</string>
+    <string name="chk_adv_zygisk_sock_solution">在 Magisk 设置中禁用 Zygisk 并重启。</string>
+    <string name="chk_adv_zygisk_sock_solution_error">手动检查 /proc/net/unix 中的 Zygisk Socket 条目。</string>
+
+    <string name="chk_adv_mgsk_mods_name">检测到 Magisk 模块</string>
+    <string name="chk_adv_mgsk_mods_desc">此设备上发现了激活的 Magisk 模块。</string>
+    <string name="chk_adv_mgsk_mods_desc_nd">未发现激活的 Magisk 模块。</string>
+    <string name="chk_adv_mgsk_mods_desc_nodir">Magisk 模块目录不存在。</string>
+    <string name="chk_adv_mgsk_mods_reason">激活的模块：%1$s</string>
+    <string name="chk_adv_mgsk_mods_reason_nd">在 /data/adb/modules/ 中未发现已启用的模块目录。</string>
+    <string name="chk_adv_mgsk_mods_reason_nodir">/data/adb/modules/ 目录不存在 — Magisk 可能未安装。</string>
+    <string name="chk_adv_mgsk_mods_solution">通过 Magisk Manager 移除或禁用 Magisk 模块。</string>
+
+    <string name="chk_adv_debugger_name">检测到调试器</string>
+    <string name="chk_adv_debugger_name_nd">调试器连接检查</string>
+    <string name="chk_adv_debugger_desc">有调试器连接到此进程。</string>
+    <string name="chk_adv_debugger_desc_nd">此进程未连接调试器。</string>
+    <string name="chk_adv_debugger_desc_error">无法读取进程状态以检查调试器。</string>
+    <string name="chk_adv_debugger_reason">TracerPid=%1$d — /proc/self/status 中非零的 TracerPid 表示已连接调试器。</string>
+    <string name="chk_adv_debugger_reason_nd">TracerPid=0 — 未连接调试器。</string>
+    <string name="chk_adv_debugger_solution">断开调试器连接，不要在调试器下运行应用。</string>
+    <string name="chk_adv_debugger_solution_error">手动检查 /proc/self/status 的 TracerPid。</string>
+
+    <string name="chk_adv_cloaking_name">检测到 Root 隐藏软件</string>
+    <string name="chk_adv_cloaking_name_nd">Root 隐藏检查</string>
+    <string name="chk_adv_cloaking_desc">Root 隐藏软件（MagiskHide、Shamiko 等）正在活动。</string>
+    <string name="chk_adv_cloaking_desc_nd">未检测到 Root 隐藏指标。</string>
+    <string name="chk_adv_cloaking_reason">隐藏指标：%1$s</string>
+    <string name="chk_adv_cloaking_reason_nd">未发现 Root 隐藏指标。</string>
+    <string name="chk_adv_cloaking_solution">禁用 MagiskHide/DenyList 或移除隐藏模块并重启。</string>
+
+    <string name="chk_adv_kern_mods_name">检测到 Root 内核模块</string>
+    <string name="chk_adv_kern_mods_desc">已加载与 Root 相关的可疑内核模块。</string>
+    <string name="chk_adv_kern_mods_desc_nd">未发现可疑内核模块。</string>
+    <string name="chk_adv_kern_mods_desc_error">无法读取内核模块列表。</string>
+    <string name="chk_adv_kern_mods_reason">可疑模块：%1$s</string>
+    <string name="chk_adv_kern_mods_reason_nd">在 /proc/modules 中未发现可疑内核模块。</string>
+    <string name="chk_adv_kern_mods_solution">移除或卸载可疑内核模块并重启。</string>
+    <string name="chk_adv_kern_mods_solution_error">手动检查 /proc/modules 中的可疑条目。</string>
+
 </resources>

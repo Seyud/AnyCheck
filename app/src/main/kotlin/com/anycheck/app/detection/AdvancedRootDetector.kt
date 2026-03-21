@@ -67,7 +67,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.CRITICAL,
                 description = context.getString(R.string.chk_adv_su_path_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_su_path_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -100,19 +100,19 @@ class AdvancedRootDetector(private val context: Context) {
             } else {
                 DetectionResult(
                     id = "rw_system",
-                    name = "System Partition Mount",
+                    name = context.getString(R.string.chk_adv_rw_sys_name_nd),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
                     description = context.getString(R.string.chk_adv_rw_sys_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_rw_sys_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "rw_system",
-                name = "System Partition Mount",
+                name = context.getString(R.string.chk_adv_rw_sys_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
@@ -160,7 +160,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.CRITICAL,
                 description = context.getString(R.string.chk_adv_bootloader_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_bootloader_reason_nd, indicators.joinToString(", ")),
-                solution = "No action required.",
+                solution = context.getString(R.string.no_action_required),
                 technicalDetail = indicators.joinToString("; ")
             )
         }
@@ -200,7 +200,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_adv_dm_verity_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_dm_verity_reason_nd),
-                solution = "No action required.",
+                solution = context.getString(R.string.no_action_required),
                 technicalDetail = indicators.joinToString("; ")
             )
         }
@@ -244,7 +244,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_adv_dang_props_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_dang_props_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -277,7 +277,7 @@ class AdvancedRootDetector(private val context: Context) {
                     riskLevel = RiskLevel.MEDIUM,
                     description = context.getString(R.string.chk_adv_dev_opts_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_dev_opts_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
@@ -322,7 +322,7 @@ class AdvancedRootDetector(private val context: Context) {
                     riskLevel = RiskLevel.HIGH,
                     description = context.getString(R.string.chk_adv_adb_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_adb_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
@@ -379,7 +379,7 @@ class AdvancedRootDetector(private val context: Context) {
                     riskLevel = RiskLevel.CRITICAL,
                     description = context.getString(R.string.chk_adv_frida_proc_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_frida_proc_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
@@ -437,7 +437,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.CRITICAL,
                 description = context.getString(R.string.chk_adv_frida_port_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_frida_port_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -475,7 +475,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_adv_frida_files_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_frida_files_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -513,7 +513,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_adv_riru_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_riru_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -559,7 +559,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_adv_twrp_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_twrp_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -611,7 +611,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.MEDIUM,
                 description = context.getString(R.string.chk_adv_emulator_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_emulator_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -670,7 +670,7 @@ class AdvancedRootDetector(private val context: Context) {
                     riskLevel = RiskLevel.CRITICAL,
                     description = context.getString(R.string.chk_adv_inj_libs_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_inj_libs_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
@@ -696,7 +696,7 @@ class AdvancedRootDetector(private val context: Context) {
             if (found.isNotEmpty()) {
                 DetectionResult(
                     id = "zygisk_socket",
-                    name = "Zygisk Companion Socket",
+                    name = context.getString(R.string.chk_adv_zygisk_sock_name),
                     category = DetectionCategory.MAGISK,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
@@ -708,19 +708,19 @@ class AdvancedRootDetector(private val context: Context) {
             } else {
                 DetectionResult(
                     id = "zygisk_socket",
-                    name = "Zygisk Companion Socket",
+                    name = context.getString(R.string.chk_adv_zygisk_sock_name_nd),
                     category = DetectionCategory.MAGISK,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
                     description = context.getString(R.string.chk_adv_zygisk_sock_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_zygisk_sock_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "zygisk_socket",
-                name = "Zygisk Companion Socket",
+                name = context.getString(R.string.chk_adv_zygisk_sock_name_nd),
                 category = DetectionCategory.MAGISK,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
@@ -752,25 +752,25 @@ class AdvancedRootDetector(private val context: Context) {
             } else {
                 DetectionResult(
                     id = "magisk_module_count",
-                    name = "Magisk Modules",
+                    name = context.getString(R.string.chk_adv_mgsk_mods_name_nd),
                     category = DetectionCategory.MAGISK,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.MEDIUM,
                     description = context.getString(R.string.chk_adv_mgsk_mods_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_mgsk_mods_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } else {
             DetectionResult(
                 id = "magisk_module_count",
-                name = "Magisk Modules",
+                name = context.getString(R.string.chk_adv_mgsk_mods_name_nd),
                 category = DetectionCategory.MAGISK,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
                 description = context.getString(R.string.chk_adv_mgsk_mods_desc_nodir),
                 detailedReason = context.getString(R.string.chk_adv_mgsk_mods_reason_nodir),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -784,7 +784,7 @@ class AdvancedRootDetector(private val context: Context) {
             if (tracerPid != 0) {
                 DetectionResult(
                     id = "debugger_attached",
-                    name = "Debugger Attached",
+                    name = context.getString(R.string.chk_adv_debugger_name),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
@@ -796,20 +796,20 @@ class AdvancedRootDetector(private val context: Context) {
             } else {
                 DetectionResult(
                     id = "debugger_attached",
-                    name = "Debugger Attached",
+                    name = context.getString(R.string.chk_adv_debugger_name_nd),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
                     description = context.getString(R.string.chk_adv_debugger_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_debugger_reason_nd),
-                    solution = "No action required.",
+                    solution = context.getString(R.string.no_action_required),
                     technicalDetail = "TracerPid=0"
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "debugger_attached",
-                name = "Debugger Attached",
+                name = context.getString(R.string.chk_adv_debugger_name_nd),
                 category = DetectionCategory.ROOT_MANAGEMENT,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
@@ -858,7 +858,7 @@ class AdvancedRootDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_adv_cloaking_desc_nd),
                 detailedReason = context.getString(R.string.chk_adv_cloaking_reason_nd),
-                solution = "No action required."
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -890,7 +890,7 @@ class AdvancedRootDetector(private val context: Context) {
                     riskLevel = RiskLevel.CRITICAL,
                     description = context.getString(R.string.chk_adv_kern_mods_desc_nd),
                     detailedReason = context.getString(R.string.chk_adv_kern_mods_reason_nd),
-                    solution = "No action required."
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
