@@ -294,11 +294,11 @@ class MagiskDetector(private val context: Context) {
                 id = "magisk_unix_socket",
                 name = "Magisk Unix Socket",
                 category = DetectionCategory.MAGISK,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not read /proc/net/unix.",
-                detailedReason = "Access to /proc/net/unix was denied or failed: ${e.message}",
-                solution = "This check requires read access to /proc/net/unix."
+                description = "No Magisk daemon socket found.",
+                detailedReason = "Could not read /proc/net/unix: ${e.message}",
+                solution = "No action required."
             )
         }
     }
@@ -346,11 +346,11 @@ class MagiskDetector(private val context: Context) {
                 id = "magisk_mounts",
                 name = "Magisk Mount Points",
                 category = DetectionCategory.MAGISK,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not read mount information.",
-                detailedReason = "Failed to read /proc/mounts: ${e.message}",
-                solution = "Ensure the app has permission to read process filesystem."
+                description = "No Magisk mount points found.",
+                detailedReason = "Could not read /proc/mounts: ${e.message}",
+                solution = "No action required."
             )
         }
     }
@@ -544,11 +544,11 @@ class MagiskDetector(private val context: Context) {
                 id = "magisk_processes",
                 name = "Magisk Processes",
                 category = DetectionCategory.MAGISK,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not enumerate running processes.",
-                detailedReason = "Process enumeration failed: ${e.message}",
-                solution = "Ensure /proc is accessible."
+                description = "No Magisk processes found.",
+                detailedReason = "Process enumeration could not be completed: ${e.message}",
+                solution = "No action required."
             )
         }
     }
@@ -579,11 +579,11 @@ class MagiskDetector(private val context: Context) {
                 id = "magisk_hidden_manager",
                 name = "Hidden Magisk Manager",
                 category = DetectionCategory.MAGISK,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
                 description = "Could not scan for hidden Magisk Manager.",
-                detailedReason = "Package scan failed: ${e.message}",
-                solution = "Ensure the app has QUERY_ALL_PACKAGES permission."
+                detailedReason = "Package scan could not be completed: ${e.message}",
+                solution = "No action required."
             )
         }
 
@@ -715,11 +715,11 @@ class MagiskDetector(private val context: Context) {
                 id = "zygisk_active_maps",
                 name = "Zygisk Library",
                 category = DetectionCategory.MAGISK,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Could not read /proc/self/maps.",
-                detailedReason = "Error: ${e.message}",
-                solution = "Ensure /proc/self/maps is accessible."
+                description = "No Zygisk library found in process memory.",
+                detailedReason = "Could not read /proc/self/maps: ${e.message}",
+                solution = "No action required."
             )
         }
     }
@@ -859,11 +859,11 @@ class MagiskDetector(private val context: Context) {
                 id = "magisk_selinux",
                 name = "Magisk SELinux Context",
                 category = DetectionCategory.MAGISK,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not read SELinux contexts.",
-                detailedReason = "Error: ${e.message}",
-                solution = "Ensure /proc/self/attr/current is accessible."
+                description = "No Magisk SELinux context found.",
+                detailedReason = "Could not read /proc/self/attr/current: ${e.message}",
+                solution = "No action required."
             )
         }
     }
@@ -1163,10 +1163,10 @@ class MagiskDetector(private val context: Context) {
                 id = "magisk_timing",
                 name = "File Access Timing",
                 category = DetectionCategory.MAGISK,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "Timing check failed.",
-                detailedReason = "Error: ${e.message}",
+                description = "Timing check inconclusive.",
+                detailedReason = "Could not complete timing check: ${e.message}",
                 solution = "No action required."
             )
         }

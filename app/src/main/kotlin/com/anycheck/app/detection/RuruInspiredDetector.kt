@@ -308,7 +308,7 @@ class RuruInspiredDetector(private val context: Context) {
                 id = "ruru_pm_cross_method",
                 name = "PM Cross-Method Anomaly",
                 category = DetectionCategory.ENVIRONMENT,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
                 description = "Could not run `pm list packages` shell command.",
                 detailedReason = "The shell command `pm list packages` was unavailable or returned empty results. " +

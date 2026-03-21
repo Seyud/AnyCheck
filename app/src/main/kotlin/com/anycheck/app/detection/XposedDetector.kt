@@ -228,11 +228,11 @@ class XposedDetector(private val context: Context) {
                 id = "xposed_bridge_class",
                 name = "XposedBridge Class",
                 category = DetectionCategory.XPOSED,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Error checking for XposedBridge class.",
-                detailedReason = "Class check failed: ${e.message}",
-                solution = "Unable to determine."
+                description = "XposedBridge class not found.",
+                detailedReason = "Class check did not locate XposedBridge: ${e.message}",
+                solution = "No action required."
             )
         }
     }
@@ -403,11 +403,11 @@ class XposedDetector(private val context: Context) {
                 id = "lsposed_socket",
                 name = "LSPosed Daemon Socket",
                 category = DetectionCategory.XPOSED,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Could not read /proc/net/unix.",
-                detailedReason = "Error: ${e.message}",
-                solution = "Ensure /proc/net/unix is accessible."
+                description = "No LSPosed daemon socket found.",
+                detailedReason = "Could not read /proc/net/unix: ${e.message}",
+                solution = "No action required."
             )
         }
     }
@@ -470,11 +470,11 @@ class XposedDetector(private val context: Context) {
                 id = "lsposed_dex_maps",
                 name = "LSPosed Files in Process",
                 category = DetectionCategory.XPOSED,
-                status = DetectionStatus.ERROR,
+                status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Could not read /proc/self/maps.",
-                detailedReason = "Error: ${e.message}",
-                solution = "Ensure /proc/self/maps is accessible."
+                description = "No LSPosed/LSPlant files found in process memory.",
+                detailedReason = "Could not read /proc/self/maps: ${e.message}",
+                solution = "No action required."
             )
         }
     }

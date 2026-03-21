@@ -24,6 +24,7 @@ class DetectionManager(private val context: Context) {
         val revenyDetector = RevenyInspiredDetector(context)
         val rootBeerFreshDetector = RootBeerFreshDetector(context)
         val ruruDetector = RuruInspiredDetector(context)
+        val systemIntegrityDetector = SystemIntegrityDetector(context)
 
         val magiskChecks = magiskDetector.runAllChecks()
         onProgress(magiskChecks.size, 0, "Magisk checks complete")
@@ -71,6 +72,10 @@ class DetectionManager(private val context: Context) {
         val ruruChecks = ruruDetector.runAllChecks()
         onProgress(rootBeerFreshEnd + ruruChecks.size, rootBeerFreshEnd, "Ruru-inspired checks complete")
         allResults.addAll(ruruChecks)
+
+        val sysIntegrityChecks = systemIntegrityDetector.runAllChecks()
+        onProgress(rootBeerFreshEnd + ruruChecks.size + sysIntegrityChecks.size, rootBeerFreshEnd + ruruChecks.size, "System integrity checks complete")
+        allResults.addAll(sysIntegrityChecks)
 
         // Sort by: detected first, then by risk level, then by category
         val sorted = allResults.sortedWith(

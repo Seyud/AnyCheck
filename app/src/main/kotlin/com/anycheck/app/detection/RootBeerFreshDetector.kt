@@ -207,7 +207,7 @@ class RootBeerFreshDetector(private val context: Context) {
             id = "rootbeerfresh_rw_paths",
             name = "RW System Paths (mount command)",
             category = DetectionCategory.SYSTEM_INTEGRITY,
-            status = DetectionStatus.ERROR,
+            status = DetectionStatus.NOT_DETECTED,
             riskLevel = RiskLevel.HIGH,
             description = "Could not run mount command.",
             detailedReason = "The mount command returned no output.",
