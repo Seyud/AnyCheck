@@ -140,4 +140,91 @@
     <string name="progress_ruru">Ruru 检查完成</string>
     <string name="progress_integrity">系统完整性检查完成</string>
     <string name="progress_format">%1$s（%2$d/%3$d）</string>
+
+    <!-- 通用检查字符串 -->
+    <string name="chk_no_action_needed">无需任何操作。</string>
+
+    <!-- KernelSU 检测器 -->
+    <!-- ksu_files -->
+    <string name="chk_ksu_files_name">检测到 KernelSU 文件</string>
+    <string name="chk_ksu_files_name_nd">KernelSU 文件</string>
+    <string name="chk_ksu_files_desc">发现 KernelSU 特定文件或目录。</string>
+    <string name="chk_ksu_files_desc_nd">未检测到 KernelSU 特定文件。</string>
+    <string name="chk_ksu_files_reason">发现以下 KernelSU 文件：%1$s。KernelSU 是基于内核的 Root 解决方案。ksud 是 KernelSU 守护程序，/data/adb/ksu 是其工作目录。</string>
+    <string name="chk_ksu_files_reason_nd">未在此设备上发现已知的 KernelSU 文件路径。</string>
+    <string name="chk_ksu_files_solution">要移除 KernelSU：使用 KernelSU 管理器 → 卸载，或通过 fastboot 刷入非 KernelSU 内核/原厂 boot 镜像。</string>
+
+    <!-- ksu_packages -->
+    <string name="chk_ksu_packages_name">检测到 KernelSU 管理器</string>
+    <string name="chk_ksu_packages_name_nd">KernelSU 管理器包</string>
+    <string name="chk_ksu_packages_desc">已安装 KernelSU 管理器或相关应用。</string>
+    <string name="chk_ksu_packages_desc_nd">未发现 KernelSU 管理器包。</string>
+    <string name="chk_ksu_packages_reason">发现 KernelSU 包：%1$s。KernelSU 管理器应用是 KernelSU 的管理界面。其存在确认已安装 KernelSU。</string>
+    <string name="chk_ksu_packages_reason_nd">未安装已知的 KernelSU 包名称。</string>
+    <string name="chk_ksu_packages_solution">使用 KernelSU 管理器卸载，然后刷入原厂内核。</string>
+
+    <!-- ksu_kernel_version -->
+    <string name="chk_ksu_kernel_version_name">内核版本中包含 KernelSU</string>
+    <string name="chk_ksu_kernel_version_name_nd">KernelSU 内核版本</string>
+    <string name="chk_ksu_kernel_version_desc">在内核版本字符串中发现 KernelSU 签名。</string>
+    <string name="chk_ksu_kernel_version_desc_nd">内核版本字符串中未发现 KernelSU 签名。</string>
+    <string name="chk_ksu_kernel_version_desc_error">无法读取内核版本。</string>
+    <string name="chk_ksu_kernel_version_reason">内核版本字符串包含 KernelSU 标记：%1$s。KernelSU 修补内核并将其版本嵌入内核字符串。内核：%2$s</string>
+    <string name="chk_ksu_kernel_version_reason_nd">内核版本字符串不包含 KernelSU 标记。</string>
+    <string name="chk_ksu_kernel_version_reason_error">读取 /proc/version 失败：%1$s</string>
+    <string name="chk_ksu_kernel_version_solution">通过 fastboot 或 recovery 刷入原厂（非 KernelSU）内核。</string>
+    <string name="chk_ksu_kernel_version_solution_error">确保 /proc/version 可访问。</string>
+
+    <!-- ksu_db -->
+    <string name="chk_ksu_db_name">发现 KernelSU 数据库</string>
+    <string name="chk_ksu_db_name_nd">KernelSU 数据库</string>
+    <string name="chk_ksu_db_desc">检测到 KernelSU SQLite 数据库。</string>
+    <string name="chk_ksu_db_desc_nd">未发现 KernelSU 数据库。</string>
+    <string name="chk_ksu_db_reason">KernelSU 使用 SQLite 数据库存储允许的包 UID 和策略规则。发现位置：%1$s。</string>
+    <string name="chk_ksu_db_reason_nd">未在已知位置发现 KernelSU 数据库。</string>
+    <string name="chk_ksu_db_solution">完全卸载 KernelSU 时将删除该数据库。</string>
+
+    <!-- ksu_mounts -->
+    <string name="chk_ksu_mounts_name">检测到 KernelSU 挂载点</string>
+    <string name="chk_ksu_mounts_name_nd">KernelSU 挂载点</string>
+    <string name="chk_ksu_mounts_desc">发现 KernelSU 相关挂载点。</string>
+    <string name="chk_ksu_mounts_desc_nd">未发现 KernelSU 挂载点。</string>
+    <string name="chk_ksu_mounts_desc_error">无法读取挂载信息。</string>
+    <string name="chk_ksu_mounts_reason">KernelSU 使用 OverlayFS 覆盖模块文件。在 /proc/mounts 中发现的关键词：%1$s。</string>
+    <string name="chk_ksu_mounts_reason_nd">未发现 KernelSU 特定挂载条目。</string>
+    <string name="chk_ksu_mounts_reason_error">读取 /proc/mounts 失败：%1$s</string>
+    <string name="chk_ksu_mounts_solution">挂载点由 KernelSU 管理。卸载时将移除。</string>
+    <string name="chk_ksu_mounts_solution_error">确保 /proc/mounts 可访问。</string>
+
+    <!-- ksu_processes -->
+    <string name="chk_ksu_processes_name">KernelSU 进程正在运行</string>
+    <string name="chk_ksu_processes_name_nd">KernelSU 进程</string>
+    <string name="chk_ksu_processes_desc">KernelSU 守护进程正在运行。</string>
+    <string name="chk_ksu_processes_desc_nd">未发现 KernelSU 守护进程。</string>
+    <string name="chk_ksu_processes_desc_error">无法枚举进程。</string>
+    <string name="chk_ksu_processes_reason">发现进程：%1$s。ksud 是 KernelSU 用户空间守护程序，处理 su 请求。</string>
+    <string name="chk_ksu_processes_reason_nd">未在运行进程列表中发现 KernelSU 进程名称。</string>
+    <string name="chk_ksu_processes_reason_error">进程枚举失败：%1$s</string>
+    <string name="chk_ksu_processes_solution">移除 KernelSU 并重启设备后进程将停止。</string>
+    <string name="chk_ksu_processes_solution_error">确保 /proc 可访问。</string>
+
+    <!-- ksu_syscall -->
+    <string name="chk_ksu_syscall_name">KernelSU 内核接口</string>
+    <string name="chk_ksu_syscall_name_selinux">SELinux 宽容模式</string>
+    <string name="chk_ksu_syscall_desc">检测到 KernelSU 内核接口。</string>
+    <string name="chk_ksu_syscall_desc_nd">未发现 KernelSU 内核接口。</string>
+    <string name="chk_ksu_syscall_desc_selinux">SELinux 处于宽容模式（潜在 KernelSU 指标）。</string>
+    <string name="chk_ksu_syscall_reason">KernelSU 在 /sys/kernel/ksu 或 /proc/sys/kernel/ksu 公开内核接口。这确认 KernelSU 已编译到运行的内核中。发现：%1$s。</string>
+    <string name="chk_ksu_syscall_reason_nd">未检测到 KernelSU 特定内核接口。</string>
+    <string name="chk_ksu_syscall_reason_selinux">SELinux 强制状态为 0（宽容）。KernelSU 和其他 Root 解决方案通常将 SELinux 设置为宽容模式以允许无限制的 Root 访问。这会显著降低设备安全性。</string>
+    <string name="chk_ksu_syscall_solution">刷入不含 KernelSU 的原厂内核以移除此接口。</string>
+    <string name="chk_ksu_syscall_solution_selinux">将 SELinux 设置为强制模式：`setenforce 1`。此设置仅在重启前有效，除非 KernelSU/Magisk 策略覆盖它。</string>
+
+    <!-- ksu_props -->
+    <string name="chk_ksu_props_name">KernelSU 系统属性</string>
+    <string name="chk_ksu_props_desc">发现 KernelSU 特定系统属性。</string>
+    <string name="chk_ksu_props_desc_nd">未发现 KernelSU 系统属性。</string>
+    <string name="chk_ksu_props_reason">发现以下 KernelSU 属性：%1$s。这些属性由 KernelSU 设置并确认其存在。</string>
+    <string name="chk_ksu_props_reason_nd">未检测到 KernelSU 特定系统属性。</string>
+    <string name="chk_ksu_props_solution">卸载 KernelSU 时将移除这些属性。</string>
 </resources>

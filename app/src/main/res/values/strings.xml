@@ -139,4 +139,91 @@
     <string name="progress_ruru">Ruru-inspired checks complete</string>
     <string name="progress_integrity">System integrity checks complete</string>
     <string name="progress_format">%1$s (%2$d/%3$d)</string>
+
+    <!-- Common check strings -->
+    <string name="chk_no_action_needed">No action required.</string>
+
+    <!-- KernelSU Detector -->
+    <!-- ksu_files -->
+    <string name="chk_ksu_files_name">KernelSU Files Detected</string>
+    <string name="chk_ksu_files_name_nd">KernelSU Files</string>
+    <string name="chk_ksu_files_desc">KernelSU-specific files or directories found.</string>
+    <string name="chk_ksu_files_desc_nd">No KernelSU-specific files detected.</string>
+    <string name="chk_ksu_files_reason">The following KernelSU files were found: %1$s. KernelSU is a kernel-based root solution. ksud is the KernelSU daemon and /data/adb/ksu is its working directory.</string>
+    <string name="chk_ksu_files_reason_nd">No known KernelSU file paths were found on this device.</string>
+    <string name="chk_ksu_files_solution">To remove KernelSU: Use KernelSU Manager → Uninstall, or flash a non-KernelSU kernel/stock boot image via fastboot.</string>
+
+    <!-- ksu_packages -->
+    <string name="chk_ksu_packages_name">KernelSU Manager Detected</string>
+    <string name="chk_ksu_packages_name_nd">KernelSU Manager Packages</string>
+    <string name="chk_ksu_packages_desc">KernelSU Manager or related apps installed.</string>
+    <string name="chk_ksu_packages_desc_nd">No KernelSU Manager packages found.</string>
+    <string name="chk_ksu_packages_reason">Found KernelSU packages: %1$s. The KernelSU Manager app is the management interface for KernelSU. Its presence confirms KernelSU is installed.</string>
+    <string name="chk_ksu_packages_reason_nd">No known KernelSU package names were installed.</string>
+    <string name="chk_ksu_packages_solution">Use KernelSU Manager to uninstall, then flash a stock kernel.</string>
+
+    <!-- ksu_kernel_version -->
+    <string name="chk_ksu_kernel_version_name">KernelSU in Kernel Version</string>
+    <string name="chk_ksu_kernel_version_name_nd">KernelSU Kernel Version</string>
+    <string name="chk_ksu_kernel_version_desc">KernelSU signature found in kernel version string.</string>
+    <string name="chk_ksu_kernel_version_desc_nd">No KernelSU signature in kernel version string.</string>
+    <string name="chk_ksu_kernel_version_desc_error">Could not read kernel version.</string>
+    <string name="chk_ksu_kernel_version_reason">The kernel version string contains KernelSU markers: %1$s. KernelSU patches the kernel and embeds its version in the kernel string. Kernel: %2$s</string>
+    <string name="chk_ksu_kernel_version_reason_nd">The kernel version string does not contain KernelSU markers.</string>
+    <string name="chk_ksu_kernel_version_reason_error">Failed to read /proc/version: %1$s</string>
+    <string name="chk_ksu_kernel_version_solution">Flash a stock (non-KernelSU) kernel via fastboot or recovery.</string>
+    <string name="chk_ksu_kernel_version_solution_error">Ensure /proc/version is accessible.</string>
+
+    <!-- ksu_db -->
+    <string name="chk_ksu_db_name">KernelSU Database Found</string>
+    <string name="chk_ksu_db_name_nd">KernelSU Database</string>
+    <string name="chk_ksu_db_desc">KernelSU SQLite database detected.</string>
+    <string name="chk_ksu_db_desc_nd">KernelSU database not found.</string>
+    <string name="chk_ksu_db_reason">KernelSU uses a SQLite database to store allowed package UIDs and policy rules. Found at: %1$s.</string>
+    <string name="chk_ksu_db_reason_nd">No KernelSU database was found at known locations.</string>
+    <string name="chk_ksu_db_solution">The database is removed when KernelSU is fully uninstalled.</string>
+
+    <!-- ksu_mounts -->
+    <string name="chk_ksu_mounts_name">KernelSU Mount Points Detected</string>
+    <string name="chk_ksu_mounts_name_nd">KernelSU Mount Points</string>
+    <string name="chk_ksu_mounts_desc">KernelSU-related mount points found.</string>
+    <string name="chk_ksu_mounts_desc_nd">No KernelSU mount points found.</string>
+    <string name="chk_ksu_mounts_desc_error">Could not read mount information.</string>
+    <string name="chk_ksu_mounts_reason">KernelSU uses OverlayFS to overlay module files. Keywords found in /proc/mounts: %1$s.</string>
+    <string name="chk_ksu_mounts_reason_nd">No KernelSU-specific mount entries found.</string>
+    <string name="chk_ksu_mounts_reason_error">Failed to read /proc/mounts: %1$s</string>
+    <string name="chk_ksu_mounts_solution">Mount points are managed by KernelSU. Removed upon uninstallation.</string>
+    <string name="chk_ksu_mounts_solution_error">Ensure /proc/mounts is accessible.</string>
+
+    <!-- ksu_processes -->
+    <string name="chk_ksu_processes_name">KernelSU Processes Running</string>
+    <string name="chk_ksu_processes_name_nd">KernelSU Processes</string>
+    <string name="chk_ksu_processes_desc">KernelSU daemon processes are running.</string>
+    <string name="chk_ksu_processes_desc_nd">No KernelSU daemon processes found.</string>
+    <string name="chk_ksu_processes_desc_error">Could not enumerate processes.</string>
+    <string name="chk_ksu_processes_reason">Found processes: %1$s. ksud is the KernelSU userspace daemon that handles su requests.</string>
+    <string name="chk_ksu_processes_reason_nd">No KernelSU process names found in running process list.</string>
+    <string name="chk_ksu_processes_reason_error">Process enumeration failed: %1$s</string>
+    <string name="chk_ksu_processes_solution">Processes stop after KernelSU is removed and device rebooted.</string>
+    <string name="chk_ksu_processes_solution_error">Ensure /proc is accessible.</string>
+
+    <!-- ksu_syscall -->
+    <string name="chk_ksu_syscall_name">KernelSU Kernel Interface</string>
+    <string name="chk_ksu_syscall_name_selinux">SELinux Permissive Mode</string>
+    <string name="chk_ksu_syscall_desc">KernelSU kernel interface detected.</string>
+    <string name="chk_ksu_syscall_desc_nd">No KernelSU kernel interface found.</string>
+    <string name="chk_ksu_syscall_desc_selinux">SELinux is in permissive mode (potential KernelSU indicator).</string>
+    <string name="chk_ksu_syscall_reason">KernelSU exposes a kernel interface at /sys/kernel/ksu or /proc/sys/kernel/ksu. This confirms KernelSU is compiled into the running kernel. Found: %1$s.</string>
+    <string name="chk_ksu_syscall_reason_nd">No KernelSU-specific kernel interfaces were detected.</string>
+    <string name="chk_ksu_syscall_reason_selinux">SELinux enforce status is 0 (permissive). KernelSU and other root solutions often set SELinux to permissive mode to allow unrestricted root access. This significantly reduces device security.</string>
+    <string name="chk_ksu_syscall_solution">Flash a stock kernel without KernelSU to remove this interface.</string>
+    <string name="chk_ksu_syscall_solution_selinux">Set SELinux to enforcing mode: `setenforce 1`. This setting persists only until reboot unless KernelSU/Magisk policies override it.</string>
+
+    <!-- ksu_props -->
+    <string name="chk_ksu_props_name">KernelSU System Properties</string>
+    <string name="chk_ksu_props_desc">KernelSU-specific system properties found.</string>
+    <string name="chk_ksu_props_desc_nd">No KernelSU system properties found.</string>
+    <string name="chk_ksu_props_reason">The following KernelSU properties were found: %1$s. These properties are set by KernelSU and confirm its presence.</string>
+    <string name="chk_ksu_props_reason_nd">No KernelSU-specific system properties were detected.</string>
+    <string name="chk_ksu_props_solution">These properties are removed when KernelSU is uninstalled.</string>
 </resources>

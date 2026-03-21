@@ -2,6 +2,7 @@ package com.anycheck.app.detection
 
 import android.content.Context
 import android.content.pm.PackageManager
+import com.anycheck.app.R
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -41,28 +42,25 @@ class KernelSUDetector(private val context: Context) {
         return if (found.isNotEmpty()) {
             DetectionResult(
                 id = "ksu_files",
-                name = "KernelSU Files Detected",
+                name = context.getString(R.string.chk_ksu_files_name),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "KernelSU-specific files or directories found.",
-                detailedReason = "The following KernelSU files were found: ${found.joinToString(", ")}. " +
-                    "KernelSU is a kernel-based root solution. " +
-                    "ksud is the KernelSU daemon and /data/adb/ksu is its working directory.",
-                solution = "To remove KernelSU: Use KernelSU Manager → Uninstall, " +
-                    "or flash a non-KernelSU kernel/stock boot image via fastboot.",
+                description = context.getString(R.string.chk_ksu_files_desc),
+                detailedReason = context.getString(R.string.chk_ksu_files_reason, found.joinToString(", ")),
+                solution = context.getString(R.string.chk_ksu_files_solution),
                 technicalDetail = "Files: ${found.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "ksu_files",
-                name = "KernelSU Files",
+                name = context.getString(R.string.chk_ksu_files_name_nd),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "No KernelSU-specific files detected.",
-                detailedReason = "No known KernelSU file paths were found on this device.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ksu_files_desc_nd),
+                detailedReason = context.getString(R.string.chk_ksu_files_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
             )
         }
     }
@@ -80,27 +78,25 @@ class KernelSUDetector(private val context: Context) {
         return if (found.isNotEmpty()) {
             DetectionResult(
                 id = "ksu_packages",
-                name = "KernelSU Manager Detected",
+                name = context.getString(R.string.chk_ksu_packages_name),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "KernelSU Manager or related apps installed.",
-                detailedReason = "Found KernelSU packages: ${found.joinToString(", ")}. " +
-                    "The KernelSU Manager app is the management interface for KernelSU. " +
-                    "Its presence confirms KernelSU is installed.",
-                solution = "Use KernelSU Manager to uninstall, then flash a stock kernel.",
+                description = context.getString(R.string.chk_ksu_packages_desc),
+                detailedReason = context.getString(R.string.chk_ksu_packages_reason, found.joinToString(", ")),
+                solution = context.getString(R.string.chk_ksu_packages_solution),
                 technicalDetail = "Packages: ${found.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "ksu_packages",
-                name = "KernelSU Manager Packages",
+                name = context.getString(R.string.chk_ksu_packages_name_nd),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "No KernelSU Manager packages found.",
-                detailedReason = "No known KernelSU package names were installed.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ksu_packages_desc_nd),
+                detailedReason = context.getString(R.string.chk_ksu_packages_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
             )
         }
     }
@@ -125,40 +121,39 @@ class KernelSUDetector(private val context: Context) {
             if (allFound.isNotEmpty()) {
                 DetectionResult(
                     id = "ksu_kernel_version",
-                    name = "KernelSU in Kernel Version",
+                    name = context.getString(R.string.chk_ksu_kernel_version_name),
                     category = DetectionCategory.KERNELSU,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
-                    description = "KernelSU signature found in kernel version string.",
-                    detailedReason = "The kernel version string contains KernelSU markers: ${allFound.joinToString(", ")}. " +
-                        "KernelSU patches the kernel and embeds its version in the kernel string. " +
-                        "Kernel: ${kernelVersion.take(100)}",
-                    solution = "Flash a stock (non-KernelSU) kernel via fastboot or recovery.",
+                    description = context.getString(R.string.chk_ksu_kernel_version_desc),
+                    detailedReason = context.getString(R.string.chk_ksu_kernel_version_reason, 
+                        allFound.joinToString(", "), kernelVersion.take(100)),
+                    solution = context.getString(R.string.chk_ksu_kernel_version_solution),
                     technicalDetail = "Kernel: ${kernelVersion.take(200)}"
                 )
             } else {
                 DetectionResult(
                     id = "ksu_kernel_version",
-                    name = "KernelSU Kernel Version",
+                    name = context.getString(R.string.chk_ksu_kernel_version_name_nd),
                     category = DetectionCategory.KERNELSU,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
-                    description = "No KernelSU signature in kernel version string.",
-                    detailedReason = "The kernel version string does not contain KernelSU markers.",
-                    solution = "No action required.",
+                    description = context.getString(R.string.chk_ksu_kernel_version_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ksu_kernel_version_reason_nd),
+                    solution = context.getString(R.string.chk_no_action_needed),
                     technicalDetail = "Kernel: ${kernelVersion.take(100)}"
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "ksu_kernel_version",
-                name = "KernelSU Kernel Version",
+                name = context.getString(R.string.chk_ksu_kernel_version_name_nd),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Could not read kernel version.",
-                detailedReason = "Failed to read /proc/version: ${e.message}",
-                solution = "Ensure /proc/version is accessible."
+                description = context.getString(R.string.chk_ksu_kernel_version_desc_error),
+                detailedReason = context.getString(R.string.chk_ksu_kernel_version_reason_error, e.message ?: ""),
+                solution = context.getString(R.string.chk_ksu_kernel_version_solution_error)
             )
         }
     }
@@ -174,26 +169,25 @@ class KernelSUDetector(private val context: Context) {
         return if (found.isNotEmpty()) {
             DetectionResult(
                 id = "ksu_db",
-                name = "KernelSU Database Found",
+                name = context.getString(R.string.chk_ksu_db_name),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "KernelSU SQLite database detected.",
-                detailedReason = "KernelSU uses a SQLite database to store allowed package UIDs and policy rules. " +
-                    "Found at: ${found.joinToString(", ")}.",
-                solution = "The database is removed when KernelSU is fully uninstalled.",
+                description = context.getString(R.string.chk_ksu_db_desc),
+                detailedReason = context.getString(R.string.chk_ksu_db_reason, found.joinToString(", ")),
+                solution = context.getString(R.string.chk_ksu_db_solution),
                 technicalDetail = "DB paths: ${found.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "ksu_db",
-                name = "KernelSU Database",
+                name = context.getString(R.string.chk_ksu_db_name_nd),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "KernelSU database not found.",
-                detailedReason = "No KernelSU database was found at known locations.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ksu_db_desc_nd),
+                detailedReason = context.getString(R.string.chk_ksu_db_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
             )
         }
     }
@@ -207,38 +201,37 @@ class KernelSUDetector(private val context: Context) {
             if (found.isNotEmpty()) {
                 DetectionResult(
                     id = "ksu_mounts",
-                    name = "KernelSU Mount Points Detected",
+                    name = context.getString(R.string.chk_ksu_mounts_name),
                     category = DetectionCategory.KERNELSU,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "KernelSU-related mount points found.",
-                    detailedReason = "KernelSU uses OverlayFS to overlay module files. " +
-                        "Keywords found in /proc/mounts: ${found.joinToString(", ")}.",
-                    solution = "Mount points are managed by KernelSU. Removed upon uninstallation.",
+                    description = context.getString(R.string.chk_ksu_mounts_desc),
+                    detailedReason = context.getString(R.string.chk_ksu_mounts_reason, found.joinToString(", ")),
+                    solution = context.getString(R.string.chk_ksu_mounts_solution),
                     technicalDetail = "Keywords: ${found.joinToString("; ")}"
                 )
             } else {
                 DetectionResult(
                     id = "ksu_mounts",
-                    name = "KernelSU Mount Points",
+                    name = context.getString(R.string.chk_ksu_mounts_name_nd),
                     category = DetectionCategory.KERNELSU,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No KernelSU mount points found.",
-                    detailedReason = "No KernelSU-specific mount entries found.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ksu_mounts_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ksu_mounts_reason_nd),
+                    solution = context.getString(R.string.chk_no_action_needed)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "ksu_mounts",
-                name = "KernelSU Mount Points",
+                name = context.getString(R.string.chk_ksu_mounts_name_nd),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not read mount information.",
-                detailedReason = "Failed to read /proc/mounts: ${e.message}",
-                solution = "Ensure /proc/mounts is accessible."
+                description = context.getString(R.string.chk_ksu_mounts_desc_error),
+                detailedReason = context.getString(R.string.chk_ksu_mounts_reason_error, e.message ?: ""),
+                solution = context.getString(R.string.chk_ksu_mounts_solution_error)
             )
         }
     }
@@ -265,38 +258,37 @@ class KernelSUDetector(private val context: Context) {
             if (found.isNotEmpty()) {
                 DetectionResult(
                     id = "ksu_processes",
-                    name = "KernelSU Processes Running",
+                    name = context.getString(R.string.chk_ksu_processes_name),
                     category = DetectionCategory.KERNELSU,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "KernelSU daemon processes are running.",
-                    detailedReason = "Found processes: ${found.joinToString(", ")}. " +
-                        "ksud is the KernelSU userspace daemon that handles su requests.",
-                    solution = "Processes stop after KernelSU is removed and device rebooted.",
+                    description = context.getString(R.string.chk_ksu_processes_desc),
+                    detailedReason = context.getString(R.string.chk_ksu_processes_reason, found.joinToString(", ")),
+                    solution = context.getString(R.string.chk_ksu_processes_solution),
                     technicalDetail = "Processes: ${found.joinToString("; ")}"
                 )
             } else {
                 DetectionResult(
                     id = "ksu_processes",
-                    name = "KernelSU Processes",
+                    name = context.getString(R.string.chk_ksu_processes_name_nd),
                     category = DetectionCategory.KERNELSU,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No KernelSU daemon processes found.",
-                    detailedReason = "No KernelSU process names found in running process list.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ksu_processes_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ksu_processes_reason_nd),
+                    solution = context.getString(R.string.chk_no_action_needed)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "ksu_processes",
-                name = "KernelSU Processes",
+                name = context.getString(R.string.chk_ksu_processes_name_nd),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not enumerate processes.",
-                detailedReason = "Process enumeration failed: ${e.message}",
-                solution = "Ensure /proc is accessible."
+                description = context.getString(R.string.chk_ksu_processes_desc_error),
+                detailedReason = context.getString(R.string.chk_ksu_processes_reason_error, e.message ?: ""),
+                solution = context.getString(R.string.chk_ksu_processes_solution_error)
             )
         }
     }
@@ -324,42 +316,37 @@ class KernelSUDetector(private val context: Context) {
         return if (found.contains("/sys/kernel/ksu") || found.contains("/proc/sys/kernel/ksu")) {
             DetectionResult(
                 id = "ksu_syscall",
-                name = "KernelSU Kernel Interface",
+                name = context.getString(R.string.chk_ksu_syscall_name),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "KernelSU kernel interface detected.",
-                detailedReason = "KernelSU exposes a kernel interface at /sys/kernel/ksu or /proc/sys/kernel/ksu. " +
-                    "This confirms KernelSU is compiled into the running kernel. " +
-                    "Found: ${found.joinToString(", ")}.",
-                solution = "Flash a stock kernel without KernelSU to remove this interface.",
+                description = context.getString(R.string.chk_ksu_syscall_desc),
+                detailedReason = context.getString(R.string.chk_ksu_syscall_reason, found.joinToString(", ")),
+                solution = context.getString(R.string.chk_ksu_syscall_solution),
                 technicalDetail = "Paths: ${found.joinToString("; ")}"
             )
         } else if (selinuxPermissive) {
             DetectionResult(
                 id = "ksu_syscall",
-                name = "SELinux Permissive Mode",
+                name = context.getString(R.string.chk_ksu_syscall_name_selinux),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "SELinux is in permissive mode (potential KernelSU indicator).",
-                detailedReason = "SELinux enforce status is 0 (permissive). " +
-                    "KernelSU and other root solutions often set SELinux to permissive mode " +
-                    "to allow unrestricted root access. This significantly reduces device security.",
-                solution = "Set SELinux to enforcing mode: `setenforce 1`. " +
-                    "This setting persists only until reboot unless KernelSU/Magisk policies override it.",
+                description = context.getString(R.string.chk_ksu_syscall_desc_selinux),
+                detailedReason = context.getString(R.string.chk_ksu_syscall_reason_selinux),
+                solution = context.getString(R.string.chk_ksu_syscall_solution_selinux),
                 technicalDetail = "SELinux enforce: $selinuxStatus"
             )
         } else {
             DetectionResult(
                 id = "ksu_syscall",
-                name = "KernelSU Kernel Interface",
+                name = context.getString(R.string.chk_ksu_syscall_name),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "No KernelSU kernel interface found.",
-                detailedReason = "No KernelSU-specific kernel interfaces were detected.",
-                solution = "No action required.",
+                description = context.getString(R.string.chk_ksu_syscall_desc_nd),
+                detailedReason = context.getString(R.string.chk_ksu_syscall_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed),
                 technicalDetail = "SELinux enforce: $selinuxStatus"
             )
         }
@@ -382,26 +369,25 @@ class KernelSUDetector(private val context: Context) {
         return if (found.isNotEmpty()) {
             DetectionResult(
                 id = "ksu_props",
-                name = "KernelSU System Properties",
+                name = context.getString(R.string.chk_ksu_props_name),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "KernelSU-specific system properties found.",
-                detailedReason = "The following KernelSU properties were found: ${found.joinToString(", ")}. " +
-                    "These properties are set by KernelSU and confirm its presence.",
-                solution = "These properties are removed when KernelSU is uninstalled.",
+                description = context.getString(R.string.chk_ksu_props_desc),
+                detailedReason = context.getString(R.string.chk_ksu_props_reason, found.joinToString(", ")),
+                solution = context.getString(R.string.chk_ksu_props_solution),
                 technicalDetail = "Props: ${found.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "ksu_props",
-                name = "KernelSU System Properties",
+                name = context.getString(R.string.chk_ksu_props_name),
                 category = DetectionCategory.KERNELSU,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "No KernelSU system properties found.",
-                detailedReason = "No KernelSU-specific system properties were detected.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ksu_props_desc_nd),
+                detailedReason = context.getString(R.string.chk_ksu_props_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
             )
         }
     }
