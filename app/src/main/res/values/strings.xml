@@ -436,7 +436,7 @@
     <string name="chk_magisk_unix_socket_name_nd">Magisk Unix Socket</string>
     <string name="chk_magisk_unix_socket_desc">Magisk daemon socket found in /proc/net/unix.</string>
     <string name="chk_magisk_unix_socket_desc_nd">No Magisk daemon socket found.</string>
-    <string name="chk_magisk_unix_socket_reason">Magisk runs a background daemon that listens on a Unix socket. The socket name '%1$s' was found in /proc/net/unix, indicating the Magisk daemon is currently running.</string>
+    <string name="chk_magisk_unix_socket_reason">Magisk runs a background daemon that listens on a Unix socket. The socket name \'%1$s\' was found in /proc/net/unix, indicating the Magisk daemon is currently running.</string>
     <string name="chk_magisk_unix_socket_reason_nd">No Magisk-related socket names were found in /proc/net/unix.</string>
     <string name="chk_magisk_unix_socket_reason_error">Could not read /proc/net/unix: %1$s</string>
     <string name="chk_magisk_unix_socket_solution">The socket disappears when Magisk is uninstalled and the device is rebooted.</string>
@@ -462,7 +462,7 @@
     <string name="chk_zygisk_lib_name_nd">Zygisk Library</string>
     <string name="chk_zygisk_lib_desc">Zygisk (Magisk in Zygote) library files found.</string>
     <string name="chk_zygisk_lib_desc_nd">No Zygisk library files found.</string>
-    <string name="chk_zygisk_lib_reason">Zygisk is Magisk's feature that runs in the Zygote process, enabling code injection into every app. Found: %1$s. This allows bypassing many detection methods and enables powerful module functionality.</string>
+    <string name="chk_zygisk_lib_reason">Zygisk is Magisk\'s feature that runs in the Zygote process, enabling code injection into every app. Found: %1$s. This allows bypassing many detection methods and enables powerful module functionality.</string>
     <string name="chk_zygisk_lib_reason_nd">Zygisk library files were not found. Either Zygisk is disabled or Magisk is not installed.</string>
     <string name="chk_zygisk_lib_solution">Disable Zygisk in Magisk settings or fully uninstall Magisk.</string>
 
@@ -516,7 +516,7 @@
     <string name="chk_magisk_stub_app_name_nd">Magisk Stub App</string>
     <string name="chk_magisk_stub_app_desc">App with Magisk stub APK characteristics found.</string>
     <string name="chk_magisk_stub_app_desc_nd">No Magisk stub app detected.</string>
-    <string name="chk_magisk_stub_app_reason">Package(s) with Magisk stub metadata: %1$s. Magisk's hide feature repackages itself as an innocent-looking app. The stub retains Magisk's content provider authority and specific permission set.</string>
+    <string name="chk_magisk_stub_app_reason">Package(s) with Magisk stub metadata: %1$s. Magisk\'s hide feature repackages itself as an innocent-looking app. The stub retains Magisk\'s content provider authority and specific permission set.</string>
     <string name="chk_magisk_stub_app_reason_nd">No installed packages match the Magisk stub APK signature.</string>
     <string name="chk_magisk_stub_app_solution">Open the stub app and uninstall Magisk through it.</string>
 
@@ -534,7 +534,7 @@
     <string name="chk_magisk_apex_name_nd">Magisk APEX Overlay</string>
     <string name="chk_magisk_apex_desc">Magisk overlay inside /apex detected.</string>
     <string name="chk_magisk_apex_desc_nd">No Magisk APEX overlay detected.</string>
-    <string name="chk_magisk_apex_reason">Found: %1$s. Magisk (v24+) can inject modules into APEX (Android Pony EXpress) partition libraries by bind-mounting over them. The 'orig' directory is created as a backup of the original APEX content. These artefacts are only present when Magisk modules are active.</string>
+    <string name="chk_magisk_apex_reason">Found: %1$s. Magisk (v24+) can inject modules into APEX (Android Pony EXpress) partition libraries by bind-mounting over them. The \'orig\' directory is created as a backup of the original APEX content. These artefacts are only present when Magisk modules are active.</string>
     <string name="chk_magisk_apex_reason_nd">No Magisk-specific files were found inside /apex.</string>
     <string name="chk_magisk_apex_solution">Disable APEX-targeting modules in Magisk Manager or uninstall Magisk.</string>
 
@@ -550,15 +550,15 @@
     <string name="chk_native_bridge_name_nd">Native Bridge</string>
     <string name="chk_native_bridge_desc">Riru/Zygisk native bridge injection detected.</string>
     <string name="chk_native_bridge_desc_nd">No suspicious native bridge injection found.</string>
-    <string name="chk_native_bridge_reason">ro.dalvik.vm.native.bridge = '%1$s'. Riru (a predecessor of Zygisk) hijacks the ART native bridge mechanism by replacing this property with its own loader library. A suspicious value here is a strong indicator of Riru/Zygisk-based injection.</string>
-    <string name="chk_native_bridge_reason_nd">ro.dalvik.vm.native.bridge is '%1$s' — stock value.</string>
+    <string name="chk_native_bridge_reason">ro.dalvik.vm.native.bridge = \'%1$s\'. Riru (a predecessor of Zygisk) hijacks the ART native bridge mechanism by replacing this property with its own loader library. A suspicious value here is a strong indicator of Riru/Zygisk-based injection.</string>
+    <string name="chk_native_bridge_reason_nd">ro.dalvik.vm.native.bridge is \'%1$s\' \u2014 stock value.</string>
     <string name="chk_native_bridge_solution">Remove the Riru or Zygisk Magisk module to restore the normal native bridge.</string>
 
     <string name="chk_zygisk_su_daemon_name">Zygisk Companion Daemon Detected</string>
     <string name="chk_zygisk_su_daemon_name_nd">Zygisk/Magisk Daemon Processes</string>
     <string name="chk_zygisk_su_daemon_desc">Zygisk/Magisk daemon processes are running.</string>
     <string name="chk_zygisk_su_daemon_desc_nd">No Zygisk/Magisk daemon processes found.</string>
-    <string name="chk_zygisk_su_daemon_reason">Found daemon process(es): %1$s. Zygisk Next (a standalone Zygisk implementation) runs privileged daemon processes named zn-daemon, zn-nsdaemon, and zn-zygisk-companion. Magisk itself runs as 'magiskd'. These are definitive indicators of active root injection.</string>
+    <string name="chk_zygisk_su_daemon_reason">Found daemon process(es): %1$s. Zygisk Next (a standalone Zygisk implementation) runs privileged daemon processes named zn-daemon, zn-nsdaemon, and zn-zygisk-companion. Magisk itself runs as \'magiskd\'. These are definitive indicators of active root injection.</string>
     <string name="chk_zygisk_su_daemon_reason_nd">No Zygisk Next or Magisk daemon process names were found in /proc/*/cmdline.</string>
     <string name="chk_zygisk_su_daemon_solution">Uninstall Magisk or the Zygisk Next module to remove these daemon processes.</string>
 
@@ -567,8 +567,8 @@
     <string name="chk_magisk_timing_desc">Suspicious file access latency suggests Magisk DenyList hooks.</string>
     <string name="chk_magisk_timing_desc_nd">No suspicious timing anomaly for Magisk file access.</string>
     <string name="chk_magisk_timing_desc_error">Timing check inconclusive.</string>
-    <string name="chk_magisk_timing_reason">File.exists('%1$s') took %2$sms (%3$s× slower than baseline). Magisk's DenyList patches intercept filesystem calls to hide Magisk files. This interception adds measurable latency compared to accessing non-hooked paths.</string>
-    <string name="chk_magisk_timing_reason_nd">File.exists() latency is within normal range (ratio=%1$s×, %2$sms). No Magisk DenyList hook latency detected.</string>
+    <string name="chk_magisk_timing_reason">File.exists(\'%1$s\') took %2$sms (%3$s\u00D7 slower than baseline). Magisk\'s DenyList patches intercept filesystem calls to hide Magisk files. This interception adds measurable latency compared to accessing non-hooked paths.</string>
+    <string name="chk_magisk_timing_reason_nd">File.exists() latency is within normal range (ratio=%1$s\u00D7, %2$sms). No Magisk DenyList hook latency detected.</string>
     <string name="chk_magisk_timing_reason_error">Could not complete timing check: %1$s</string>
     <string name="chk_magisk_timing_solution">Disable Magisk DenyList or uninstall Magisk.</string>
 

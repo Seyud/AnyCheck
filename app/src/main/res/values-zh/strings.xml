@@ -437,7 +437,7 @@
     <string name="chk_magisk_unix_socket_name_nd">Magisk Unix 套接字</string>
     <string name="chk_magisk_unix_socket_desc">在 /proc/net/unix 中发现了 Magisk 守护进程套接字。</string>
     <string name="chk_magisk_unix_socket_desc_nd">未发现 Magisk 守护进程套接字。</string>
-    <string name="chk_magisk_unix_socket_reason">Magisk 运行一个监听 Unix 套接字的后台守护进程。套接字名称 '%1$s' 在 /proc/net/unix 中被发现，表明 Magisk 守护进程当前正在运行。</string>
+    <string name="chk_magisk_unix_socket_reason">Magisk 运行一个监听 Unix 套接字的后台守护进程。套接字名称 \'%1$s\' 在 /proc/net/unix 中被发现，表明 Magisk 守护进程当前正在运行。</string>
     <string name="chk_magisk_unix_socket_reason_nd">在 /proc/net/unix 中未找到与 Magisk 相关的套接字名称。</string>
     <string name="chk_magisk_unix_socket_reason_error">无法读取 /proc/net/unix：%1$s</string>
     <string name="chk_magisk_unix_socket_solution">卸载 Magisk 并重启设备后，套接字将消失。</string>
@@ -535,7 +535,7 @@
     <string name="chk_magisk_apex_name_nd">Magisk APEX 覆盖</string>
     <string name="chk_magisk_apex_desc">在 /apex 内检测到 Magisk 覆盖。</string>
     <string name="chk_magisk_apex_desc_nd">未检测到 Magisk APEX 覆盖。</string>
-    <string name="chk_magisk_apex_reason">发现：%1$s。Magisk（v24+）可以通过绑定挂载将模块注入 APEX（Android Pony EXpress）分区库。'orig' 目录作为原始 APEX 内容的备份创建。这些文件仅在 Magisk 模块处于活动状态时存在。</string>
+    <string name="chk_magisk_apex_reason">发现：%1$s。Magisk（v24+）可以通过绑定挂载将模块注入 APEX（Android Pony EXpress）分区库。\'orig\' 目录作为原始 APEX 内容的备份创建。这些文件仅在 Magisk 模块处于活动状态时存在。</string>
     <string name="chk_magisk_apex_reason_nd">在 /apex 内未发现 Magisk 特有文件。</string>
     <string name="chk_magisk_apex_solution">在 Magisk Manager 中禁用针对 APEX 的模块或卸载 Magisk。</string>
 
@@ -551,15 +551,15 @@
     <string name="chk_native_bridge_name_nd">原生桥接</string>
     <string name="chk_native_bridge_desc">已检测到 Riru/Zygisk 原生桥接注入。</string>
     <string name="chk_native_bridge_desc_nd">未发现可疑的原生桥接注入。</string>
-    <string name="chk_native_bridge_reason">ro.dalvik.vm.native.bridge = '%1$s'。Riru（Zygisk 的前身）通过将此属性替换为其自身的加载器库来劫持 ART 原生桥接机制。此处的可疑值是 Riru/Zygisk 注入的强烈指标。</string>
-    <string name="chk_native_bridge_reason_nd">ro.dalvik.vm.native.bridge 为 '%1$s'——原厂值。</string>
+    <string name="chk_native_bridge_reason">ro.dalvik.vm.native.bridge = \'%1$s\'。Riru（Zygisk 的前身）通过将此属性替换为其自身的加载器库来劫持 ART 原生桥接机制。此处的可疑值是 Riru/Zygisk 注入的强烈指标。</string>
+    <string name="chk_native_bridge_reason_nd">ro.dalvik.vm.native.bridge 为 \'%1$s\'\u2014\u2014原厂值。</string>
     <string name="chk_native_bridge_solution">移除 Riru 或 Zygisk Magisk 模块以恢复正常的原生桥接。</string>
 
     <string name="chk_zygisk_su_daemon_name">已检测到 Zygisk 伴随守护进程</string>
     <string name="chk_zygisk_su_daemon_name_nd">Zygisk/Magisk 守护进程</string>
     <string name="chk_zygisk_su_daemon_desc">Zygisk/Magisk 守护进程正在运行。</string>
     <string name="chk_zygisk_su_daemon_desc_nd">未发现 Zygisk/Magisk 守护进程。</string>
-    <string name="chk_zygisk_su_daemon_reason">发现守护进程：%1$s。Zygisk Next（独立的 Zygisk 实现）运行名为 zn-daemon、zn-nsdaemon 和 zn-zygisk-companion 的特权守护进程。Magisk 本身以 'magiskd' 运行。这些是活动 root 注入的确定性指标。</string>
+    <string name="chk_zygisk_su_daemon_reason">发现守护进程：%1$s。Zygisk Next（独立的 Zygisk 实现）运行名为 zn-daemon、zn-nsdaemon 和 zn-zygisk-companion 的特权守护进程。Magisk 本身以 \'magiskd\' 运行。这些是活动 root 注入的确定性指标。</string>
     <string name="chk_zygisk_su_daemon_reason_nd">在 /proc/*/cmdline 中未发现 Zygisk Next 或 Magisk 守护进程名称。</string>
     <string name="chk_zygisk_su_daemon_solution">卸载 Magisk 或 Zygisk Next 模块以移除这些守护进程。</string>
 
@@ -568,8 +568,8 @@
     <string name="chk_magisk_timing_desc">可疑的文件访问延迟表明存在 Magisk DenyList 钩子。</string>
     <string name="chk_magisk_timing_desc_nd">未检测到 Magisk 文件访问的可疑时序异常。</string>
     <string name="chk_magisk_timing_desc_error">时序检查结果不确定。</string>
-    <string name="chk_magisk_timing_reason">File.exists('%1$s') 耗时 %2$sms（比基准慢 %3$s 倍）。Magisk 的 DenyList 补丁拦截文件系统调用以隐藏 Magisk 文件。与访问未钩挂路径相比，这种拦截增加了可测量的延迟。</string>
-    <string name="chk_magisk_timing_reason_nd">File.exists() 延迟在正常范围内（比率=%1$s×，%2$sms）。未检测到 Magisk DenyList 钩子延迟。</string>
+    <string name="chk_magisk_timing_reason">File.exists(\'%1$s\') 耗时 %2$sms（比基准慢 %3$s 倍）。Magisk 的 DenyList 补丁拦截文件系统调用以隐藏 Magisk 文件。与访问未钩挂路径相比，这种拦截增加了可测量的延迟。</string>
+    <string name="chk_magisk_timing_reason_nd">File.exists() 延迟在正常范围内（比率=%1$s\u00D7，%2$sms）。未检测到 Magisk DenyList 钩子延迟。</string>
     <string name="chk_magisk_timing_reason_error">无法完成时序检查：%1$s</string>
     <string name="chk_magisk_timing_solution">禁用 Magisk DenyList 或卸载 Magisk。</string>
 
