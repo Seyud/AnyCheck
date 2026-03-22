@@ -1258,4 +1258,102 @@
     <string name="chk_luna_mac_anomaly_desc_nd">No zero MAC address anomalies detected.</string>
     <string name="chk_luna_mac_anomaly_reason_nd">Luna-method (magiskmac): All readable network interfaces have non-zero MAC addresses.</string>
 
+
+    <!-- RevenyInspiredDetector: Check 1 - Custom ROM -->
+    <string name="chk_reveny_custom_rom_name">Custom ROM Detected</string>
+    <string name="chk_reveny_custom_rom_desc">A custom ROM (e.g. LineageOS) was detected on this device.</string>
+    <string name="chk_reveny_custom_rom_reason">Custom ROM indicators found: %1$s. Custom ROMs may have relaxed security policies and often ship with root access enabled.</string>
+    <string name="chk_reveny_custom_rom_solution">Flash the official OEM firmware via fastboot to restore a stock environment.</string>
+    <string name="chk_reveny_custom_rom_name_nd">Custom ROM</string>
+    <string name="chk_reveny_custom_rom_desc_nd">No custom ROM detected.</string>
+    <string name="chk_reveny_custom_rom_reason_nd">No known custom ROM properties or fingerprint keywords found.</string>
+    <!-- RevenyInspiredDetector: Check 2 - Custom Kernel -->
+    <string name="chk_reveny_custom_kernel_name">Custom Kernel Detected</string>
+    <string name="chk_reveny_custom_kernel_desc">A non-stock (custom) kernel was detected.</string>
+    <string name="chk_reveny_custom_kernel_reason">Custom kernel indicators in /proc/version: %1$s. Custom kernels may have security patches removed or extra capabilities enabled.</string>
+    <string name="chk_reveny_custom_kernel_solution">Flash the OEM stock kernel/boot image to restore an official kernel.</string>
+    <string name="chk_reveny_custom_kernel_name_nd">Custom Kernel</string>
+    <string name="chk_reveny_custom_kernel_desc_nd">No custom kernel indicators found.</string>
+    <string name="chk_reveny_custom_kernel_reason_nd">The kernel banner does not contain known custom-kernel strings.</string>
+    <!-- RevenyInspiredDetector: Check 3 - Resetprop -->
+    <string name="chk_reveny_resetprop_name">Resetprop Detected</string>
+    <string name="chk_reveny_resetprop_desc">The resetprop tool was found on this device.</string>
+    <string name="chk_reveny_resetprop_reason">resetprop is a Magisk utility that can modify Android system properties at runtime without leaving traces in the normal property service. Found at: %1$s.</string>
+    <string name="chk_reveny_resetprop_solution">Uninstall Magisk via the Magisk Manager app or flash a stock boot image.</string>
+    <string name="chk_reveny_resetprop_name_nd">Resetprop</string>
+    <string name="chk_reveny_resetprop_desc_nd">Resetprop tool not found.</string>
+    <string name="chk_reveny_resetprop_reason_nd">No resetprop binary was detected at known Magisk paths.</string>
+    <!-- RevenyInspiredDetector: Check 4 - Debug Fingerprint -->
+    <string name="chk_reveny_debug_fp_name">Debug Fingerprint Detected</string>
+    <string name="chk_reveny_debug_fp_desc">The device is running a userdebug or eng build.</string>
+    <string name="chk_reveny_debug_fp_reason">Build type '%1$s' is a debug variant. Debug builds have ADB root, relaxed SELinux, and may expose sensitive system interfaces. Fingerprint: %2$s.</string>
+    <string name="chk_reveny_debug_fp_solution">Use a production ('user') build for proper security hardening.</string>
+    <string name="chk_reveny_debug_fp_name_nd">Debug Fingerprint</string>
+    <string name="chk_reveny_debug_fp_desc_nd">No debug fingerprint detected.</string>
+    <string name="chk_reveny_debug_fp_reason_nd">Build type is '%1$s', which is a production build.</string>
+    <!-- RevenyInspiredDetector: Check 5 - Hide My Applist -->
+    <string name="chk_reveny_hma_name">Hide My Applist Detected</string>
+    <string name="chk_reveny_hma_desc">Hide My Applist framework detected.</string>
+    <string name="chk_reveny_hma_reason">Hide My Applist (HMA) is an Xposed/LSPosed module that intercepts PackageManager calls to hide installed apps from other applications. Indicators: %1$s.</string>
+    <string name="chk_reveny_hma_solution">Disable or uninstall the Hide My Applist module via LSPosed Manager.</string>
+    <string name="chk_reveny_hma_name_nd">Hide My Applist</string>
+    <string name="chk_reveny_hma_desc_nd">Hide My Applist not detected.</string>
+    <string name="chk_reveny_hma_reason_nd">No Hide My Applist packages or sockets were found.</string>
+    <!-- RevenyInspiredDetector: Check 6 - Mount Inconsistency -->
+    <string name="chk_reveny_mount_inc_name">Mount Inconsistency Detected</string>
+    <string name="chk_reveny_mount_inc_desc">Mount table inconsistency detected — possible umount-based hiding.</string>
+    <string name="chk_reveny_mount_inc_reason">Mounts visible in /proc/self/mountinfo but absent from /proc/mounts suggest a process has called umount() to hide root-related bind mounts from simpler mount file parsers. Suspicious paths: %1$s.</string>
+    <string name="chk_reveny_mount_inc_solution">This is a strong indicator of Magisk or a similar framework using mount namespace manipulation. Uninstall the root framework.</string>
+    <string name="chk_reveny_mount_inc_name_nd">Mount Inconsistency</string>
+    <string name="chk_reveny_mount_inc_desc_nd">No mount table inconsistency detected.</string>
+    <string name="chk_reveny_mount_inc_reason_nd">/proc/mounts and /proc/self/mountinfo are consistent.</string>
+    <string name="chk_reveny_mount_inc_desc_error">Mount inconsistency check could not be completed.</string>
+    <string name="chk_reveny_mount_inc_reason_error">Failed to read /proc/mounts or /proc/self/mountinfo.</string>
+    <!-- RevenyInspiredDetector: Check 7 - Addon.d -->
+    <string name="chk_reveny_addon_d_name">Addon.d / install-recovery.sh Detected</string>
+    <string name="chk_reveny_addon_d_desc">OTA persistence scripts found in the system partition.</string>
+    <string name="chk_reveny_addon_d_reason">addon.d scripts and install-recovery.sh are used by custom ROMs and rooting frameworks to survive OTA updates by re-applying patches after a system update. Indicators: %1$s.</string>
+    <string name="chk_reveny_addon_d_solution">These files indicate a modified system. Flash an official OEM ROM to remove them.</string>
+    <string name="chk_reveny_addon_d_name_nd">Addon.d / install-recovery.sh</string>
+    <string name="chk_reveny_addon_d_desc_nd">No addon.d scripts or install-recovery.sh found.</string>
+    <string name="chk_reveny_addon_d_reason_nd">No OTA persistence scripts were detected in the system partition.</string>
+    <!-- RevenyInspiredDetector: Check 8 - System Apps Absence -->
+    <string name="chk_reveny_sys_apps_name">System Apps Hidden</string>
+    <string name="chk_reveny_sys_apps_desc">Abnormally few system apps visible — app-list hiding likely active.</string>
+    <string name="chk_reveny_sys_apps_reason">Only %1$d system app(s) returned by PackageManager. Normal Android devices expose 50+ system apps. This strongly indicates an app-list hiding framework (e.g. Hide My Applist) is intercepting queries.</string>
+    <string name="chk_reveny_sys_apps_solution">Disable the app-list hiding module via LSPosed Manager.</string>
+    <string name="chk_reveny_sys_apps_name_nd">System Apps Visibility</string>
+    <string name="chk_reveny_sys_apps_desc_nd">System apps appear normally visible.</string>
+    <string name="chk_reveny_sys_apps_reason_nd">%1$d system apps returned by PackageManager — within normal range.</string>
+    <string name="chk_reveny_sys_apps_desc_error">Could not query system app list.</string>
+    <string name="chk_reveny_sys_apps_reason_error">PackageManager query failed.</string>
+    <!-- RevenyInspiredDetector: Check 9 - Vendor SEPolicy -->
+    <string name="chk_reveny_vendor_sep_name_notfound">Vendor SEPolicy Lineage Check</string>
+    <string name="chk_reveny_vendor_sep_desc_notfound">vendor_sepolicy.cil not found or not accessible.</string>
+    <string name="chk_reveny_vendor_sep_reason_notfound">The vendor SELinux policy file was not present or not readable.</string>
+    <string name="chk_reveny_vendor_sep_name">LineageOS SEPolicy Detected</string>
+    <string name="chk_reveny_vendor_sep_desc">vendor_sepolicy.cil contains LineageOS-specific entries.</string>
+    <string name="chk_reveny_vendor_sep_reason">The vendor SELinux policy file contains custom ROM policy entries: %1$s. This confirms a custom ROM build.</string>
+    <string name="chk_reveny_vendor_sep_solution">Flash an official OEM ROM to restore the original SELinux policy.</string>
+    <string name="chk_reveny_vendor_sep_name_nd">Vendor SEPolicy Lineage Check</string>
+    <string name="chk_reveny_vendor_sep_desc_nd">No LineageOS entries in vendor_sepolicy.cil.</string>
+    <string name="chk_reveny_vendor_sep_reason_nd">The vendor SELinux policy does not contain known custom ROM entries.</string>
+    <string name="chk_reveny_vendor_sep_desc_error">Could not read vendor_sepolicy.cil.</string>
+    <string name="chk_reveny_vendor_sep_reason_error">Permission denied or I/O error reading the SELinux policy file.</string>
+    <!-- RevenyInspiredDetector: Check 10 - Framework Patch -->
+    <string name="chk_reveny_fw_patch_name_noaccess">Framework Patch Check</string>
+    <string name="chk_reveny_fw_patch_desc_noaccess">/system/framework not accessible.</string>
+    <string name="chk_reveny_fw_patch_reason_noaccess">The framework directory could not be read.</string>
+    <string name="chk_reveny_fw_patch_desc_empty">No files found in /system/framework.</string>
+    <string name="chk_reveny_fw_patch_reason_empty">The framework directory appears empty.</string>
+    <string name="chk_reveny_fw_patch_name">Framework Patch Detected</string>
+    <string name="chk_reveny_fw_patch_desc">System framework may have been patched.</string>
+    <string name="chk_reveny_fw_patch_reason">Evidence of framework modification: %1$s. Xposed / LSPosed work by patching the Android runtime framework (services.jar, framework.jar) to allow hooking.</string>
+    <string name="chk_reveny_fw_patch_solution">Remove the Xposed framework and restore the original framework files by flashing a stock ROM.</string>
+    <string name="chk_reveny_fw_patch_name_nd">Framework Patch</string>
+    <string name="chk_reveny_fw_patch_desc_nd">No framework patch indicators found.</string>
+    <string name="chk_reveny_fw_patch_reason_nd">No suspicious files or modification time anomalies in /system/framework.</string>
+    <string name="chk_reveny_fw_patch_desc_error">Could not complete framework patch check.</string>
+    <string name="chk_reveny_fw_patch_reason_error">Permission denied or I/O error reading /system/framework.</string>
+
 </resources>

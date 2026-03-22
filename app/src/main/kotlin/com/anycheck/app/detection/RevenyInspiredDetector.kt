@@ -72,26 +72,25 @@ class RevenyInspiredDetector(private val context: Context) {
         return if (indicators.isNotEmpty()) {
             DetectionResult(
                 id = "reveny_custom_rom",
-                name = "Custom ROM Detected",
+                name = context.getString(R.string.chk_reveny_custom_rom_name),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "A custom ROM (e.g. LineageOS) was detected on this device.",
-                detailedReason = "Custom ROM indicators found: ${indicators.joinToString("; ")}. " +
-                    "Custom ROMs may have relaxed security policies and often ship with root access enabled.",
-                solution = "Flash the official OEM firmware via fastboot to restore a stock environment.",
+                description = context.getString(R.string.chk_reveny_custom_rom_desc),
+                detailedReason = context.getString(R.string.chk_reveny_custom_rom_reason, indicators.joinToString("; ")),
+                solution = context.getString(R.string.chk_reveny_custom_rom_solution),
                 technicalDetail = indicators.joinToString("; ")
             )
         } else {
             DetectionResult(
                 id = "reveny_custom_rom",
-                name = "Custom ROM",
+                name = context.getString(R.string.chk_reveny_custom_rom_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "No custom ROM detected.",
-                detailedReason = "No known custom ROM properties or fingerprint keywords found.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_custom_rom_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_custom_rom_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -132,26 +131,25 @@ class RevenyInspiredDetector(private val context: Context) {
         return if (indicators.isNotEmpty()) {
             DetectionResult(
                 id = "reveny_custom_kernel",
-                name = "Custom Kernel Detected",
+                name = context.getString(R.string.chk_reveny_custom_kernel_name),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "A non-stock (custom) kernel was detected.",
-                detailedReason = "Custom kernel indicators in /proc/version: ${indicators.joinToString("; ")}. " +
-                    "Custom kernels may have security patches removed or extra capabilities enabled.",
-                solution = "Flash the OEM stock kernel/boot image to restore an official kernel.",
+                description = context.getString(R.string.chk_reveny_custom_kernel_desc),
+                detailedReason = context.getString(R.string.chk_reveny_custom_kernel_reason, indicators.joinToString("; ")),
+                solution = context.getString(R.string.chk_reveny_custom_kernel_solution),
                 technicalDetail = "Kernel banner: ${procVersion.take(200)}"
             )
         } else {
             DetectionResult(
                 id = "reveny_custom_kernel",
-                name = "Custom Kernel",
+                name = context.getString(R.string.chk_reveny_custom_kernel_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "No custom kernel indicators found.",
-                detailedReason = "The kernel banner does not contain known custom-kernel strings.",
-                solution = "No action required.",
+                description = context.getString(R.string.chk_reveny_custom_kernel_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_custom_kernel_reason_nd),
+                solution = context.getString(R.string.no_action_required),
                 technicalDetail = "Kernel banner: ${procVersion.take(200)}"
             )
         }
@@ -174,27 +172,25 @@ class RevenyInspiredDetector(private val context: Context) {
         return if (found.isNotEmpty()) {
             DetectionResult(
                 id = "reveny_resetprop",
-                name = "Resetprop Detected",
+                name = context.getString(R.string.chk_reveny_resetprop_name),
                 category = DetectionCategory.MAGISK,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "The resetprop tool was found on this device.",
-                detailedReason = "resetprop is a Magisk utility that can modify Android system properties " +
-                    "at runtime without leaving traces in the normal property service. " +
-                    "Found at: ${found.joinToString(", ")}.",
-                solution = "Uninstall Magisk via the Magisk Manager app or flash a stock boot image.",
+                description = context.getString(R.string.chk_reveny_resetprop_desc),
+                detailedReason = context.getString(R.string.chk_reveny_resetprop_reason, found.joinToString(", ")),
+                solution = context.getString(R.string.chk_reveny_resetprop_solution),
                 technicalDetail = "Paths: ${found.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "reveny_resetprop",
-                name = "Resetprop",
+                name = context.getString(R.string.chk_reveny_resetprop_name_nd),
                 category = DetectionCategory.MAGISK,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Resetprop tool not found.",
-                detailedReason = "No resetprop binary was detected at known Magisk paths.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_resetprop_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_resetprop_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -217,27 +213,25 @@ class RevenyInspiredDetector(private val context: Context) {
             val detail = "buildType=$buildType, fingerprint=${fingerprint.take(80)}, tags=$tags"
             DetectionResult(
                 id = "reveny_debug_fingerprint",
-                name = "Debug Fingerprint Detected",
+                name = context.getString(R.string.chk_reveny_debug_fp_name),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "The device is running a userdebug or eng build.",
-                detailedReason = "Build type '$buildType' is a debug variant. " +
-                    "Debug builds have ADB root, relaxed SELinux, and may expose sensitive " +
-                    "system interfaces. Fingerprint: ${fingerprint.take(80)}.",
-                solution = "Use a production ('user') build for proper security hardening.",
+                description = context.getString(R.string.chk_reveny_debug_fp_desc),
+                detailedReason = context.getString(R.string.chk_reveny_debug_fp_reason, buildType, fingerprint.take(80)),
+                solution = context.getString(R.string.chk_reveny_debug_fp_solution),
                 technicalDetail = detail
             )
         } else {
             DetectionResult(
                 id = "reveny_debug_fingerprint",
-                name = "Debug Fingerprint",
+                name = context.getString(R.string.chk_reveny_debug_fp_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "No debug fingerprint detected.",
-                detailedReason = "Build type is '$buildType', which is a production build.",
-                solution = "No action required.",
+                description = context.getString(R.string.chk_reveny_debug_fp_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_debug_fp_reason_nd, buildType),
+                solution = context.getString(R.string.no_action_required),
                 technicalDetail = "buildType=$buildType"
             )
         }
@@ -275,27 +269,25 @@ class RevenyInspiredDetector(private val context: Context) {
         return if (indicators.isNotEmpty()) {
             DetectionResult(
                 id = "reveny_hide_my_applist",
-                name = "Hide My Applist Detected",
+                name = context.getString(R.string.chk_reveny_hma_name),
                 category = DetectionCategory.XPOSED,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Hide My Applist framework detected.",
-                detailedReason = "Hide My Applist (HMA) is an Xposed/LSPosed module that intercepts " +
-                    "PackageManager calls to hide installed apps from other applications. " +
-                    "Indicators: ${indicators.joinToString("; ")}.",
-                solution = "Disable or uninstall the Hide My Applist module via LSPosed Manager.",
+                description = context.getString(R.string.chk_reveny_hma_desc),
+                detailedReason = context.getString(R.string.chk_reveny_hma_reason, indicators.joinToString("; ")),
+                solution = context.getString(R.string.chk_reveny_hma_solution),
                 technicalDetail = indicators.joinToString("; ")
             )
         } else {
             DetectionResult(
                 id = "reveny_hide_my_applist",
-                name = "Hide My Applist",
+                name = context.getString(R.string.chk_reveny_hma_name_nd),
                 category = DetectionCategory.XPOSED,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Hide My Applist not detected.",
-                detailedReason = "No Hide My Applist packages or sockets were found.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_hma_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_hma_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -334,40 +326,37 @@ class RevenyInspiredDetector(private val context: Context) {
             if (suspicious.isNotEmpty()) {
                 DetectionResult(
                     id = "reveny_mount_inconsistency",
-                    name = "Mount Inconsistency Detected",
+                    name = context.getString(R.string.chk_reveny_mount_inc_name),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Mount table inconsistency detected — possible umount-based hiding.",
-                    detailedReason = "Mounts visible in /proc/self/mountinfo but absent from /proc/mounts " +
-                        "suggest a process has called umount() to hide root-related bind mounts from " +
-                        "simpler mount file parsers. Suspicious paths: ${suspicious.take(5).joinToString(", ")}.",
-                    solution = "This is a strong indicator of Magisk or a similar framework using " +
-                        "mount namespace manipulation. Uninstall the root framework.",
+                    description = context.getString(R.string.chk_reveny_mount_inc_desc),
+                    detailedReason = context.getString(R.string.chk_reveny_mount_inc_reason, suspicious.take(5).joinToString(", ")),
+                    solution = context.getString(R.string.chk_reveny_mount_inc_solution),
                     technicalDetail = "Hidden mount points: ${suspicious.joinToString("; ")}"
                 )
             } else {
                 DetectionResult(
                     id = "reveny_mount_inconsistency",
-                    name = "Mount Inconsistency",
+                    name = context.getString(R.string.chk_reveny_mount_inc_name_nd),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No mount table inconsistency detected.",
-                    detailedReason = "/proc/mounts and /proc/self/mountinfo are consistent.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_reveny_mount_inc_desc_nd),
+                    detailedReason = context.getString(R.string.chk_reveny_mount_inc_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (_: Exception) {
             DetectionResult(
                 id = "reveny_mount_inconsistency",
-                name = "Mount Inconsistency",
+                name = context.getString(R.string.chk_reveny_mount_inc_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Mount inconsistency check could not be completed.",
-                detailedReason = "Failed to read /proc/mounts or /proc/self/mountinfo.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_mount_inc_desc_error),
+                detailedReason = context.getString(R.string.chk_reveny_mount_inc_reason_error),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -395,28 +384,25 @@ class RevenyInspiredDetector(private val context: Context) {
         return if (indicators.isNotEmpty()) {
             DetectionResult(
                 id = "reveny_addon_d",
-                name = "Addon.d / install-recovery.sh Detected",
+                name = context.getString(R.string.chk_reveny_addon_d_name),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "OTA persistence scripts found in the system partition.",
-                detailedReason = "addon.d scripts and install-recovery.sh are used by custom ROMs " +
-                    "and rooting frameworks to survive OTA updates by re-applying patches after " +
-                    "a system update. Indicators: ${indicators.joinToString("; ")}.",
-                solution = "These files indicate a modified system. Flash an official OEM ROM " +
-                    "to remove them.",
+                description = context.getString(R.string.chk_reveny_addon_d_desc),
+                detailedReason = context.getString(R.string.chk_reveny_addon_d_reason, indicators.joinToString("; ")),
+                solution = context.getString(R.string.chk_reveny_addon_d_solution),
                 technicalDetail = indicators.joinToString("; ")
             )
         } else {
             DetectionResult(
                 id = "reveny_addon_d",
-                name = "Addon.d / install-recovery.sh",
+                name = context.getString(R.string.chk_reveny_addon_d_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "No addon.d scripts or install-recovery.sh found.",
-                detailedReason = "No OTA persistence scripts were detected in the system partition.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_addon_d_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_addon_d_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -438,40 +424,38 @@ class RevenyInspiredDetector(private val context: Context) {
             return if (systemApps.size < threshold) {
                 DetectionResult(
                     id = "reveny_system_apps_absent",
-                    name = "System Apps Hidden",
+                    name = context.getString(R.string.chk_reveny_sys_apps_name),
                     category = DetectionCategory.XPOSED,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Abnormally few system apps visible — app-list hiding likely active.",
-                    detailedReason = "Only ${systemApps.size} system app(s) returned by PackageManager. " +
-                        "Normal Android devices expose 50+ system apps. This strongly indicates an " +
-                        "app-list hiding framework (e.g. Hide My Applist) is intercepting queries.",
-                    solution = "Disable the app-list hiding module via LSPosed Manager.",
+                    description = context.getString(R.string.chk_reveny_sys_apps_desc),
+                    detailedReason = context.getString(R.string.chk_reveny_sys_apps_reason, systemApps.size),
+                    solution = context.getString(R.string.chk_reveny_sys_apps_solution),
                     technicalDetail = "System app count: ${systemApps.size}"
                 )
             } else {
                 DetectionResult(
                     id = "reveny_system_apps_absent",
-                    name = "System Apps Visibility",
+                    name = context.getString(R.string.chk_reveny_sys_apps_name_nd),
                     category = DetectionCategory.XPOSED,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "System apps appear normally visible.",
-                    detailedReason = "${systemApps.size} system apps returned by PackageManager — within normal range.",
-                    solution = "No action required.",
+                    description = context.getString(R.string.chk_reveny_sys_apps_desc_nd),
+                    detailedReason = context.getString(R.string.chk_reveny_sys_apps_reason_nd, systemApps.size),
+                    solution = context.getString(R.string.no_action_required),
                     technicalDetail = "System app count: ${systemApps.size}"
                 )
             }
         } catch (_: Exception) {
             DetectionResult(
                 id = "reveny_system_apps_absent",
-                name = "System Apps Visibility",
+                name = context.getString(R.string.chk_reveny_sys_apps_name_nd),
                 category = DetectionCategory.XPOSED,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not query system app list.",
-                detailedReason = "PackageManager query failed.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_sys_apps_desc_error),
+                detailedReason = context.getString(R.string.chk_reveny_sys_apps_reason_error),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -485,13 +469,13 @@ class RevenyInspiredDetector(private val context: Context) {
         if (!sepolicyFile.exists()) {
             return DetectionResult(
                 id = "reveny_vendor_sepolicy",
-                name = "Vendor SEPolicy Lineage Check",
+                name = context.getString(R.string.chk_reveny_vendor_sep_name_notfound),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "vendor_sepolicy.cil not found or not accessible.",
-                detailedReason = "The vendor SELinux policy file was not present or not readable.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_vendor_sep_desc_notfound),
+                detailedReason = context.getString(R.string.chk_reveny_vendor_sep_reason_notfound),
+                solution = context.getString(R.string.no_action_required)
             )
         }
         return try {
@@ -501,38 +485,37 @@ class RevenyInspiredDetector(private val context: Context) {
             if (found.isNotEmpty()) {
                 DetectionResult(
                     id = "reveny_vendor_sepolicy",
-                    name = "LineageOS SEPolicy Detected",
+                    name = context.getString(R.string.chk_reveny_vendor_sep_name),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.MEDIUM,
-                    description = "vendor_sepolicy.cil contains LineageOS-specific entries.",
-                    detailedReason = "The vendor SELinux policy file contains custom ROM policy entries: " +
-                        "${found.joinToString(", ")}. This confirms a custom ROM build.",
-                    solution = "Flash an official OEM ROM to restore the original SELinux policy.",
+                    description = context.getString(R.string.chk_reveny_vendor_sep_desc),
+                    detailedReason = context.getString(R.string.chk_reveny_vendor_sep_reason, found.joinToString(", ")),
+                    solution = context.getString(R.string.chk_reveny_vendor_sep_solution),
                     technicalDetail = "Found keywords: ${found.joinToString(", ")} in vendor_sepolicy.cil"
                 )
             } else {
                 DetectionResult(
                     id = "reveny_vendor_sepolicy",
-                    name = "Vendor SEPolicy Lineage Check",
+                    name = context.getString(R.string.chk_reveny_vendor_sep_name_nd),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.MEDIUM,
-                    description = "No LineageOS entries in vendor_sepolicy.cil.",
-                    detailedReason = "The vendor SELinux policy does not contain known custom ROM entries.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_reveny_vendor_sep_desc_nd),
+                    detailedReason = context.getString(R.string.chk_reveny_vendor_sep_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (_: Exception) {
             DetectionResult(
                 id = "reveny_vendor_sepolicy",
-                name = "Vendor SEPolicy Lineage Check",
+                name = context.getString(R.string.chk_reveny_vendor_sep_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "Could not read vendor_sepolicy.cil.",
-                detailedReason = "Permission denied or I/O error reading the SELinux policy file.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_vendor_sep_desc_error),
+                detailedReason = context.getString(R.string.chk_reveny_vendor_sep_reason_error),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -548,13 +531,13 @@ class RevenyInspiredDetector(private val context: Context) {
         if (!frameworkDir.exists()) {
             return DetectionResult(
                 id = "reveny_framework_patch",
-                name = "Framework Patch Check",
+                name = context.getString(R.string.chk_reveny_fw_patch_name_noaccess),
                 category = DetectionCategory.XPOSED,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "/system/framework not accessible.",
-                detailedReason = "The framework directory could not be read.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_fw_patch_desc_noaccess),
+                detailedReason = context.getString(R.string.chk_reveny_fw_patch_reason_noaccess),
+                solution = context.getString(R.string.no_action_required)
             )
         }
         return try {
@@ -562,13 +545,13 @@ class RevenyInspiredDetector(private val context: Context) {
             if (frameworkFiles.isEmpty()) {
                 return DetectionResult(
                     id = "reveny_framework_patch",
-                    name = "Framework Patch Check",
+                    name = context.getString(R.string.chk_reveny_fw_patch_name_noaccess),
                     category = DetectionCategory.XPOSED,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No files found in /system/framework.",
-                    detailedReason = "The framework directory appears empty.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_reveny_fw_patch_desc_empty),
+                    detailedReason = context.getString(R.string.chk_reveny_fw_patch_reason_empty),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
 
@@ -609,40 +592,37 @@ class RevenyInspiredDetector(private val context: Context) {
             if (indicators.isNotEmpty()) {
                 DetectionResult(
                     id = "reveny_framework_patch",
-                    name = "Framework Patch Detected",
+                    name = context.getString(R.string.chk_reveny_fw_patch_name),
                     category = DetectionCategory.XPOSED,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "System framework may have been patched.",
-                    detailedReason = "Evidence of framework modification: ${indicators.joinToString("; ")}. " +
-                        "Xposed / LSPosed work by patching the Android runtime framework " +
-                        "(services.jar, framework.jar) to allow hooking.",
-                    solution = "Remove the Xposed framework and restore the original framework files " +
-                        "by flashing a stock ROM.",
+                    description = context.getString(R.string.chk_reveny_fw_patch_desc),
+                    detailedReason = context.getString(R.string.chk_reveny_fw_patch_reason, indicators.joinToString("; ")),
+                    solution = context.getString(R.string.chk_reveny_fw_patch_solution),
                     technicalDetail = indicators.joinToString("; ")
                 )
             } else {
                 DetectionResult(
                     id = "reveny_framework_patch",
-                    name = "Framework Patch",
+                    name = context.getString(R.string.chk_reveny_fw_patch_name_nd),
                     category = DetectionCategory.XPOSED,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No framework patch indicators found.",
-                    detailedReason = "No suspicious files or modification time anomalies in /system/framework.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_reveny_fw_patch_desc_nd),
+                    detailedReason = context.getString(R.string.chk_reveny_fw_patch_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (_: Exception) {
             DetectionResult(
                 id = "reveny_framework_patch",
-                name = "Framework Patch Check",
+                name = context.getString(R.string.chk_reveny_fw_patch_name_noaccess),
                 category = DetectionCategory.XPOSED,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not complete framework patch check.",
-                detailedReason = "Permission denied or I/O error reading /system/framework.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_reveny_fw_patch_desc_error),
+                detailedReason = context.getString(R.string.chk_reveny_fw_patch_reason_error),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
