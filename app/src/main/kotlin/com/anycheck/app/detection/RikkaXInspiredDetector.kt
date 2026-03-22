@@ -6,7 +6,10 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import com.anycheck.app.R
+import java.io.ByteArrayInputStream
 import java.io.File
+import java.security.cert.CertificateFactory
+import java.util.zip.ZipFile
 
 /**
  * Detection checks using the RikkaX DeviceCompatibility library approach
@@ -18,16 +21,16 @@ import java.io.File
  * security indicators that are not covered by the other detector modules.
  *
  * Checks (10 total):
- *  1. MIUI root-access setting  (persist.sys.root_access)
- *  2. LineageOS / CyanogenMod ROM  (ro.lineage.version / ro.cm.version)
- *  3. OEM bootloader unlock flag  (sys.oem_unlock_allowed)
- *  4. Samsung Knox warranty bit  (ro.boot.warranty_bit)
- *  5. Huawei EMUI / HarmonyOS props  (ro.build.version.emui / ro.build.version.hmos)
- *  6. Flyme / Meizu OS  (Build.FINGERPRINT / Build.DISPLAY)
- *  7. ColorOS / OxygenOS / OnePlus ROM  (ro.build.version.opporom / ro.oxygen.version)
- *  8. MIUI HyperOS / MIUI EU props  (ro.miui.ui.version.name + ro.miui.region)
- *  9. Seccomp status  (/proc/self/status → Seccomp: field)
- * 10. Core crack / Lucky Patcher PM integrity check
+ *  1.  MIUI root-access setting  (persist.sys.root_access)
+ *  2.  LineageOS / CyanogenMod ROM  (ro.lineage.version / ro.cm.version)
+ *  3.  OEM bootloader unlock flag  (sys.oem_unlock_allowed)
+ *  4.  Samsung Knox warranty bit  (ro.boot.warranty_bit)
+ *  5.  Huawei EMUI / HarmonyOS props  (ro.build.version.emui / ro.build.version.hmos)
+ *  6.  Flyme / Meizu OS  (Build.FINGERPRINT / Build.DISPLAY)
+ *  7.  ColorOS / OxygenOS / OnePlus ROM  (ro.build.version.opporom / ro.oxygen.version)
+ *  8.  MIUI HyperOS / MIUI EU props  (ro.miui.ui.version.name + ro.miui.region)
+ *  9.  Seccomp status  (/proc/self/status → Seccomp: field)
+ * 10.  Core crack / Lucky Patcher / CorePatch PM integrity check (sub-checks A–M)
  */
 class RikkaXInspiredDetector(private val context: Context) {
 
@@ -682,9 +685,10 @@ class RikkaXInspiredDetector(private val context: Context) {
             }
         } catch (_: Exception) {}
 
-        // ── Sub-check F: Extended Lucky Patcher package list ─────────────────
+        // ── Sub-check F: Extended Lucky Patcher / CorePatch package list ─────
         // Covers: main LP app under various distribution names,
-        // LP billing injection APKs, and older/regional LP variants.
+        // LP billing injection APKs, older/regional LP variants, and
+        // CorePatch (核心破解 via LSPosed module) package name variants.
         val lpPackages = listOf(
             // Main LP app variants
             "cc.luckypatcher",
@@ -707,11 +711,17 @@ class RikkaXInspiredDetector(private val context: Context) {
             // LP system-level app paths (if installed as system app)
             // checked via packageExists which uses getPackageInfo
             "ru.luckypatcher",
-            "org.luckypatcher"
+            "org.luckypatcher",
+            // CorePatch — LSPosed module for APK signature bypass (核心破解)
+            // on Android 9+.  Several package names exist for the original and forks.
+            "icu.nullptr.corepackage",         // CorePatch by icu.nullptr (original)
+            "com.bststone.corepackage",        // BSStudio fork
+            "io.github.corepackage",
+            "io.github.chsbuffer.corepackage"  // chsbuffer fork
         )
         val foundPkgs = lpPackages.filter { packageExists(it) }
         if (foundPkgs.isNotEmpty()) {
-            indicators.add("Sub-F: LP/crack packages installed: ${foundPkgs.joinToString()}")
+            indicators.add("Sub-F: LP/CorePatch packages installed: ${foundPkgs.joinToString()}")
         }
 
         // Also check for LP system-level installation paths
@@ -763,6 +773,124 @@ class RikkaXInspiredDetector(private val context: Context) {
             indicators.add("Sub-H: Non-system INSTALL_PACKAGES: ${pmAnomalyPkgs.joinToString()}")
         }
 
+        // ── Sub-check I: Cross-package checkSignatures with known-different signers ─
+        // Platform-signed packages (e.g. com.android.settings) and Google-signed
+        // packages (e.g. com.google.android.gms) can NEVER share the same signer.
+        // Deliberately does NOT use our own package name so LP/CorePatch cannot
+        // selectively exclude AnyCheck from the hook scope.
+        // A globally patched compareSignatures() must return MATCH for these too.
+        try {
+            val crossPairs = listOf(
+                Pair("com.android.settings",  "com.google.android.gms"),
+                Pair("android",               "com.google.android.gms"),
+                Pair("com.android.systemui",  "com.google.android.gms")
+            )
+            for ((pkg1, pkg2) in crossPairs) {
+                if (packageExists(pkg1) && packageExists(pkg2)) {
+                    if (context.packageManager.checkSignatures(pkg1, pkg2) ==
+                            PackageManager.SIGNATURE_MATCH) {
+                        indicators.add(
+                            "Sub-I: checkSignatures($pkg1, $pkg2)=SIGNATURE_MATCH " +
+                            "— platform-signed and Google-signed packages can never share a signer"
+                        )
+                    }
+                    break // only test the first valid pair; one is sufficient
+                }
+            }
+        } catch (_: Exception) {}
+
+        // ── Sub-check J: GET_SIGNING_CERTIFICATES (API 28+) vs GET_SIGNATURES ────
+        // Android API 28 introduced PackageManager.GET_SIGNING_CERTIFICATES, which
+        // uses the newer APK Signature Scheme v2/v3 code path.  Core crack patches
+        // that target only the legacy GET_SIGNATURES path leave this path unmodified,
+        // causing the two APIs to return different certificate bytes for the same app.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                @Suppress("DEPRECATION")
+                val legacySigs = context.packageManager
+                    .getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES)
+                    .signatures
+                    .map { it.toByteArray().toList() }.toSet()
+
+                val newSigs = context.packageManager
+                    .getPackageInfo(
+                        context.packageName,
+                        PackageManager.GET_SIGNING_CERTIFICATES
+                    )
+                    .signingInfo
+                    .apkContentsSigners
+                    .map { it.toByteArray().toList() }.toSet()
+
+                if (legacySigs != newSigs) {
+                    indicators.add(
+                        "Sub-J: GET_SIGNATURES and GET_SIGNING_CERTIFICATES return " +
+                        "different certs for our app — PM is serving inconsistent certificate data"
+                    )
+                }
+            } catch (_: Exception) {}
+        }
+
+        // ── Sub-check K: Direct APK certificate extraction (bypass PackageManager) ─
+        // Read our own APK as a ZIP and parse the DER-encoded X.509 certificate from
+        // the META-INF/*.RSA|DSA|EC PKCS#7 entry without going through PackageManager.
+        // If the on-disk certificate differs from what PM reports via GET_SIGNATURES,
+        // PackageManager is returning fabricated certificate data.
+        try {
+            val apkPath = context.applicationInfo.sourceDir
+            ZipFile(apkPath).use { zip ->
+                val certEntry = zip.entries().toList().firstOrNull { e ->
+                    e.name.startsWith("META-INF/") &&
+                    (e.name.endsWith(".RSA") || e.name.endsWith(".DSA") ||
+                     e.name.endsWith(".EC"))
+                }
+                if (certEntry != null) {
+                    val raw = zip.getInputStream(certEntry).readBytes()
+                    val factory = CertificateFactory.getInstance("X.509")
+                    val certs = factory.generateCertificates(ByteArrayInputStream(raw))
+                    val apkCert = certs.firstOrNull()?.encoded?.toList()
+
+                    @Suppress("DEPRECATION")
+                    val pmCert = context.packageManager
+                        .getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES)
+                        .signatures.firstOrNull()?.toByteArray()?.toList()
+
+                    if (apkCert != null && pmCert != null && apkCert != pmCert) {
+                        indicators.add(
+                            "Sub-K: APK on-disk certificate differs from PM-reported certificate " +
+                            "— PackageManager is serving fabricated certificate data for our app"
+                        )
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        // ── Sub-check L: Magisk module directory scan for LP / CorePatch modules ──
+        // Modern Lucky Patcher and CorePatch deliver the core crack patch via a
+        // Magisk module stored under /data/adb/modules/<module_id>/.
+        // Lucky Patcher module IDs typically contain "lp", "lucky", or "patch";
+        // CorePatch IDs typically contain "core", "corepackage", or "fakesign".
+        try {
+            val modulesDir = File("/data/adb/modules")
+            if (modulesDir.isDirectory) {
+                val suspectKeywords = listOf(
+                    "lp", "lucky", "luckypatcher", "crack",
+                    "corepatch", "corepackage", "core_patch",
+                    "fakesign", "fake_sign", "sigbypass"
+                )
+                val found = modulesDir.listFiles()
+                    ?.filter { d ->
+                        val id = d.name.lowercase()
+                        suspectKeywords.any { id.contains(it) }
+                    }
+                    ?.map { it.name } ?: emptyList()
+                if (found.isNotEmpty()) {
+                    indicators.add(
+                        "Sub-L: LP/CorePatch Magisk modules found: ${found.joinToString()}"
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+
         return if (indicators.isNotEmpty()) {
             DetectionResult(
                 id = "rikkax_core_crack",
@@ -787,7 +915,7 @@ class RikkaXInspiredDetector(private val context: Context) {
                 description = context.getString(R.string.chk_rikkax_core_crack_desc_nd),
                 detailedReason = context.getString(R.string.chk_rikkax_core_crack_reason_nd),
                 solution = context.getString(R.string.chk_no_action_needed),
-                technicalDetail = "All 8 sub-checks passed (A: checkSignatures, B: cert cross-validation, C: framework mtime, D: backup files, E: billing service, F: LP packages/paths, G: LP data dirs, H: INSTALL_PACKAGES)"
+                technicalDetail = "All 12 sub-checks passed (A: checkSignatures, B: cert cross-validation, C: framework mtime, D: backup files, E: billing service, F: LP/CorePatch packages/paths, G: LP data dirs, H: INSTALL_PACKAGES, I: cross-package sig test, J: GET_SIGNING_CERTIFICATES, K: APK direct cert, L: Magisk module scan)"
             )
         }
     }
