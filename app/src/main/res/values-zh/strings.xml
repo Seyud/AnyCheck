@@ -1529,7 +1529,7 @@
 
     <!-- RikkaXInspiredDetector：检查 5 – 华为 EMUI / HarmonyOS -->
     <string name="chk_rikkax_emui_name_eng">检测到华为 EMUI/HarmonyOS 工程版本</string>
-    <string name="chk_rikkax_emui_desc_eng">设备正在运行 %1$s 工程或 userdebug 版本，该版本启用了提升的访问权限。</string>
+    <string name="chk_rikkax_emui_desc_eng">华为/荣耀设备正在运行工程或 userdebug 版本，该版本启用了提升的访问权限。</string>
     <string name="chk_rikkax_emui_reason_eng">设备正在运行 %1$s。ro.product.build.type=%2$s。华为工程版和 userdebug 版本默认启用 Root 访问，并可能具有宽松的安全策略。</string>
     <string name="chk_rikkax_emui_solution">避免在生产设备上使用工程版或 userdebug 版本。如果不需要提升的访问权限，请重刷官方华为用户版本。</string>
     <string name="chk_rikkax_emui_name_info">检测到 %1$s 设备</string>

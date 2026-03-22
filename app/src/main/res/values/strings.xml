@@ -1528,7 +1528,7 @@
 
     <!-- RikkaXInspiredDetector: Check 5 – Huawei EMUI / HarmonyOS -->
     <string name="chk_rikkax_emui_name_eng">Huawei EMUI/HarmonyOS Engineering Build Detected</string>
-    <string name="chk_rikkax_emui_desc_eng">Device is running %1$s in engineering or userdebug build type, which enables elevated access.</string>
+    <string name="chk_rikkax_emui_desc_eng">Huawei/Honor device is running an engineering or userdebug build type, which enables elevated access.</string>
     <string name="chk_rikkax_emui_reason_eng">Device is running %1$s. ro.product.build.type=%2$s. Engineering and userdebug Huawei builds ship with root access enabled by default and may have relaxed security policies.</string>
     <string name="chk_rikkax_emui_solution">Avoid using engineering or userdebug builds on production devices. Reflash with an official Huawei user build if elevated access is unintended.</string>
     <string name="chk_rikkax_emui_name_info">%1$s Device Detected</string>

@@ -212,7 +212,7 @@ class RikkaXInspiredDetector(private val context: Context) {
             )
         }
 
-        return if (warrantyBit == "1" || knoxCounter == "0x0") {
+        return if (warrantyBit == "1") {
             DetectionResult(
                 id = "rikkax_samsung_knox",
                 name = context.getString(R.string.chk_rikkax_knox_name),
@@ -441,10 +441,10 @@ class RikkaXInspiredDetector(private val context: Context) {
             else      -> "MIUI $miuiVersion"
         }
 
-        // MIUI EU is a community-maintained MIUI port; "CN" and "GLOBAL" are official Xiaomi regions
-        val isEuRom = miuiRegion.equals("EU", ignoreCase = true) ||
-                      miuiVersion.contains("EEA", ignoreCase = true) ||
-                      miuiVersion.contains("EU", ignoreCase = true)
+        // MIUI EU is a community-maintained MIUI port; official regions are "CN", "GLOBAL", "EEA", "IN", etc.
+        val isEuRom = miuiVersion.contains("EU", ignoreCase = true) &&
+                      !miuiVersion.contains("EEA", ignoreCase = true) ||
+                      miuiRegion.equals("EU", ignoreCase = true)
 
         return if (isEuRom) {
             DetectionResult(
