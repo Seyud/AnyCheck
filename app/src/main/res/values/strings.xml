@@ -942,4 +942,145 @@
     <string name="chk_adv_kern_mods_name_nd">Root Kernel Modules Check</string>
     <string name="chk_adv_mgsk_mods_name_nd">Magisk Modules Check</string>
 
+    <!-- ExtraRootDetector: Check 1 - LD_PRELOAD -->
+    <string name="chk_ext_ldpreload_name">LD_PRELOAD / LD_LIBRARY_PATH Set</string>
+    <string name="chk_ext_ldpreload_desc">Linker environment variable injection detected.</string>
+    <string name="chk_ext_ldpreload_reason">Found: %1$s. Setting LD_PRELOAD causes the dynamic linker to load an attacker-chosen library before all others, enabling function interception in any process. This is used by Frida gadget, Substrate-style hooks, and some su wrappers.</string>
+    <string name="chk_ext_ldpreload_solution">Remove any LD_PRELOAD/LD_LIBRARY_PATH from the environment. Uninstall any hooking framework that injects via the linker.</string>
+    <string name="chk_ext_ldpreload_name_nd">LD_PRELOAD Environment</string>
+    <string name="chk_ext_ldpreload_desc_nd">No LD_PRELOAD injection detected.</string>
+    <string name="chk_ext_ldpreload_reason_nd">LD_PRELOAD and LD_LIBRARY_PATH are not set to suspicious values.</string>
+    <string name="chk_ext_ldpreload_desc_error">Could not read process environment.</string>
+    <string name="chk_ext_ldpreload_solution_error">Ensure /proc/self/environ is accessible.</string>
+    <!-- ExtraRootDetector: Check 2 - Linux Capabilities -->
+    <string name="chk_ext_caps_name">Elevated Linux Capabilities</string>
+    <string name="chk_ext_caps_desc">Process has non-zero Linux capabilities.</string>
+    <string name="chk_ext_caps_reason">CapPrm=%1$s, CapEff=%2$s. Normal Android apps run with zero capabilities. Non-zero values indicate this process was granted elevated Linux privileges, which can happen when su or a root framework manipulates the process.</string>
+    <string name="chk_ext_caps_solution">Revoke elevated capabilities. These are normally granted by root frameworks.</string>
+    <string name="chk_ext_caps_name_nd">Linux Capabilities</string>
+    <string name="chk_ext_caps_desc_nd">Process has no elevated Linux capabilities.</string>
+    <string name="chk_ext_caps_reason_nd">CapPrm=0 and CapEff=0 — normal for a sandboxed Android app.</string>
+    <string name="chk_ext_caps_desc_error">Could not read process status.</string>
+    <string name="chk_ext_caps_solution_error">Ensure /proc/self/status is accessible.</string>
+    <!-- ExtraRootDetector: Check 3 - Mountinfo Overlay -->
+    <string name="chk_ext_overlay_name">Magisk/KSU Overlay Mounts Detected</string>
+    <string name="chk_ext_overlay_desc">Root framework overlay mount entries found in /proc/self/mountinfo.</string>
+    <string name="chk_ext_overlay_reason">/proc/self/mountinfo shows %1$d mount entry/entries sourced from Magisk/KSU directories (/data/adb/magisk or /data/adb/ksu). These are bind-mounts created by the root framework\'s module system to overlay modified files over the original system partition.</string>
+    <string name="chk_ext_overlay_solution">Remove root framework modules or uninstall the root framework entirely.</string>
+    <string name="chk_ext_overlay_name_nd">Root Overlay Mounts</string>
+    <string name="chk_ext_overlay_desc_nd">No Magisk/KSU overlay mounts found.</string>
+    <string name="chk_ext_overlay_reason_nd">No root framework markers were found in /proc/self/mountinfo.</string>
+    <string name="chk_ext_overlay_desc_error">Could not read /proc/self/mountinfo.</string>
+    <string name="chk_ext_overlay_solution_error">Ensure /proc/self/mountinfo is accessible.</string>
+    <!-- ExtraRootDetector: Check 4 - tmpfs at /sbin -->
+    <string name="chk_ext_sbin_tmpfs_name">tmpfs Mounted at /sbin</string>
+    <string name="chk_ext_sbin_tmpfs_desc">tmpfs is mounted over /sbin — legacy Magisk indicator.</string>
+    <string name="chk_ext_sbin_tmpfs_reason">Magisk versions prior to v24 mounted a tmpfs over /sbin to store its binaries and hide them from detection. A tmpfs on /sbin on a production device is a strong Magisk indicator.</string>
+    <string name="chk_ext_sbin_tmpfs_solution">This is removed when Magisk is uninstalled.</string>
+    <string name="chk_ext_sbin_tmpfs_name_nd">tmpfs at /sbin</string>
+    <string name="chk_ext_sbin_tmpfs_desc_nd">No tmpfs mount at /sbin.</string>
+    <string name="chk_ext_sbin_tmpfs_reason_nd">/sbin does not have a tmpfs mount.</string>
+    <string name="chk_ext_sbin_tmpfs_desc_error">Could not read /proc/mounts.</string>
+    <string name="chk_ext_sbin_tmpfs_solution_error">Ensure /proc/mounts is accessible.</string>
+    <!-- ExtraRootDetector: Check 5 - Privileged Processes -->
+    <string name="chk_ext_priv_proc_name">Unexpected Root Processes</string>
+    <string name="chk_ext_priv_proc_desc">Unexpected processes running as uid=0 (root).</string>
+    <string name="chk_ext_priv_proc_reason">Found %1$d unexpected root process(es): %2$s. On a stock device, the set of uid=0 processes is fixed. Extra root processes indicate active root frameworks (magiskd, ksud, etc.).</string>
+    <string name="chk_ext_priv_proc_solution">Stop or remove the root framework to eliminate unexpected root processes.</string>
+    <string name="chk_ext_priv_proc_name_nd">Privileged Processes</string>
+    <string name="chk_ext_priv_proc_desc_nd">No unexpected uid=0 processes found.</string>
+    <string name="chk_ext_priv_proc_reason_nd">Only expected system processes were found running as root.</string>
+    <string name="chk_ext_priv_proc_desc_error">Could not enumerate processes.</string>
+    <string name="chk_ext_priv_proc_solution_error">Ensure /proc is accessible.</string>
+    <!-- ExtraRootDetector: Check 6 - Terminal/Hacking Apps -->
+    <string name="chk_ext_hacking_apps_name">Terminal / Hacking Apps Detected</string>
+    <string name="chk_ext_hacking_apps_desc">Terminal emulator or security tool apps installed.</string>
+    <string name="chk_ext_hacking_apps_reason">Found %1$d app(s): %2$s. These apps provide terminal access, SSH, scripting environments, or advanced file system access. Many require or facilitate root access.</string>
+    <string name="chk_ext_hacking_apps_solution">Uninstall terminal and hacking apps if not needed for legitimate use.</string>
+    <string name="chk_ext_hacking_apps_name_nd">Terminal / Hacking Apps</string>
+    <string name="chk_ext_hacking_apps_desc_nd">No terminal emulator or hacking apps detected.</string>
+    <string name="chk_ext_hacking_apps_reason_nd">No known terminal or security tool packages were found.</string>
+    <!-- ExtraRootDetector: Check 7 - Security Patch Age -->
+    <string name="chk_ext_sec_patch_name_critical">Security Patch Very Outdated</string>
+    <string name="chk_ext_sec_patch_desc_critical">Security patch is %1$d months old (&gt;= 2 years).</string>
+    <string name="chk_ext_sec_patch_reason_critical">Security patch level: %1$s (%2$d months ago). Rooted devices often avoid OTA updates to preserve root access, resulting in severely outdated security patches. An extremely old patch level exposes the device to known CVEs.</string>
+    <string name="chk_ext_sec_patch_solution_critical">Apply all available OTA/security updates.</string>
+    <string name="chk_ext_sec_patch_name_warn">Security Patch Outdated</string>
+    <string name="chk_ext_sec_patch_desc_warn">Security patch is %1$d months old (&gt;= 1 year).</string>
+    <string name="chk_ext_sec_patch_reason_warn">Security patch level: %1$s (%2$d months ago). Keeping the patch level current is important for device security.</string>
+    <string name="chk_ext_sec_patch_solution_warn">Apply all available security updates from the manufacturer.</string>
+    <string name="chk_ext_sec_patch_name_nd">Security Patch Level</string>
+    <string name="chk_ext_sec_patch_desc_nd">Security patch level is reasonably current (&lt; 12 months).</string>
+    <string name="chk_ext_sec_patch_reason_nd">Patch date: %1$s (%2$d months ago).</string>
+    <string name="chk_ext_sec_patch_desc_error">Could not determine security patch age.</string>
+    <string name="chk_ext_sec_patch_solution_error">Check Settings → About Phone → Android security patch level.</string>
+    <!-- ExtraRootDetector: Check 8 - Test-Keys Build -->
+    <string name="chk_ext_test_keys_name">Test-Keys Build Detected</string>
+    <string name="chk_ext_test_keys_desc">Device is running a test-keys signed build.</string>
+    <string name="chk_ext_test_keys_reason">ro.build.tags=%1$s. Production (retail) Android builds are signed with release keys and report \'release-keys\'. \'test-keys\' means the build was signed with Android\'s publicly known AOSP test keys, which is typical for custom ROMs (LineageOS, AOSP builds) and developer images. Such builds often have root access or weaker security policies.</string>
+    <string name="chk_ext_test_keys_solution">Use an OEM-provided, release-keys signed official ROM.</string>
+    <string name="chk_ext_test_keys_name_nd">Build Signing Keys</string>
+    <string name="chk_ext_test_keys_desc_nd">Build is signed with release keys.</string>
+    <string name="chk_ext_test_keys_reason_nd">ro.build.tags=%1$s — not test-keys.</string>
+    <!-- ExtraRootDetector: Check 9 - OEM Unlock -->
+    <string name="chk_ext_oem_unlock_name">OEM Unlock Enabled</string>
+    <string name="chk_ext_oem_unlock_desc">OEM unlock is currently enabled.</string>
+    <string name="chk_ext_oem_unlock_reason">OEM unlock enabled: %1$s. When OEM unlock is allowed, the user can unlock the bootloader from Developer Options. An enabled OEM unlock setting indicates the device is prepared for rooting.</string>
+    <string name="chk_ext_oem_unlock_solution">Disable OEM unlock via Settings → Developer Options → OEM unlocking → toggle off.</string>
+    <string name="chk_ext_oem_unlock_name_nd">OEM Unlock</string>
+    <string name="chk_ext_oem_unlock_desc_nd">OEM unlock does not appear to be enabled.</string>
+    <string name="chk_ext_oem_unlock_reason_nd">No OEM unlock enabled indicators found.</string>
+    <!-- ExtraRootDetector: Check 10 - Mock Locations -->
+    <string name="chk_ext_mock_loc_name">Mock Locations Enabled</string>
+    <string name="chk_ext_mock_loc_desc">Mock location provider is enabled.</string>
+    <string name="chk_ext_mock_loc_reason">Mock locations allow any app to supply fake GPS coordinates. This is commonly used for GPS spoofing and game cheating. Detail: %1$s</string>
+    <string name="chk_ext_mock_loc_solution">Disable mock location: Settings → Developer Options → Mock location app → None.</string>
+    <string name="chk_ext_mock_loc_name_nd">Mock Locations</string>
+    <string name="chk_ext_mock_loc_desc_nd">Mock locations are not enabled.</string>
+    <string name="chk_ext_mock_loc_reason_nd">allow_mock_location=0 and no mock location app is configured.</string>
+    <string name="chk_ext_mock_loc_desc_error">Could not read mock location settings.</string>
+    <string name="chk_ext_mock_loc_solution_error">Check manually in Settings → Developer Options.</string>
+    <!-- ExtraRootDetector: Check 11 - Wireless ADB -->
+    <string name="chk_ext_wireless_adb_name">ADB over Wi-Fi Active</string>
+    <string name="chk_ext_wireless_adb_desc">ADB over Wi-Fi port is listening.</string>
+    <string name="chk_ext_wireless_adb_reason">Port(s) %1$s are in LISTEN state. Port 5555 is the ADB-over-Wi-Fi default. Any device on the same network can connect and issue ADB commands, including installing/removing apps and (on debug builds) gaining a shell.</string>
+    <string name="chk_ext_wireless_adb_solution">Disable via \'adb disconnect\' or Settings → Wireless Debugging → toggle off.</string>
+    <string name="chk_ext_wireless_adb_name_nd">ADB over Wi-Fi</string>
+    <string name="chk_ext_wireless_adb_desc_nd">No ADB Wi-Fi ports detected as listening.</string>
+    <string name="chk_ext_wireless_adb_reason_nd">Ports 5555/5037 are not in LISTEN state.</string>
+    <!-- ExtraRootDetector: Check 12 - BusyBox -->
+    <string name="chk_ext_busybox_name">BusyBox Installed</string>
+    <string name="chk_ext_busybox_desc">BusyBox binary found.</string>
+    <string name="chk_ext_busybox_reason">Found: %1$s. BusyBox is a suite of Unix command-line utilities (ls, cp, wget, etc.) commonly installed alongside root to extend shell capabilities. Presence in /system/xbin or /sbin usually requires root to have been installed.</string>
+    <string name="chk_ext_busybox_solution">Remove via BusyBox uninstaller app or manually delete the binary.</string>
+    <string name="chk_ext_busybox_name_nd">BusyBox</string>
+    <string name="chk_ext_busybox_desc_nd">BusyBox not found.</string>
+    <string name="chk_ext_busybox_reason_nd">No BusyBox binary found at common locations.</string>
+    <!-- ExtraRootDetector: Check 13 - SUID su Binary -->
+    <string name="chk_ext_su_suid_name">SUID su Binary Detected</string>
+    <string name="chk_ext_su_suid_desc">SUID root su binary found.</string>
+    <string name="chk_ext_su_suid_reason">SUID binaries: %1$s. A SUID root su binary can be executed by any user to gain root privileges. This is the classic root-granting mechanism on Unix/Android.</string>
+    <string name="chk_ext_su_suid_solution">Remove the su binary or revoke its SUID bit: \'chmod 755 /system/bin/su\'</string>
+    <string name="chk_ext_su_suid_name_nd">SUID su Binary</string>
+    <string name="chk_ext_su_suid_desc_nd">No SUID su binary detected.</string>
+    <string name="chk_ext_su_suid_reason_nd">No SUID root su binary was found at common paths.</string>
+    <!-- ExtraRootDetector: Check 14 - Shamiko/ZygiskAssist -->
+    <string name="chk_ext_shamiko_name">Detection-Bypass Module Found</string>
+    <string name="chk_ext_shamiko_desc">Root detection bypass module detected.</string>
+    <string name="chk_ext_shamiko_reason">Found: %1$s. Shamiko, Zygisk-Assistant, and ReZygisk are Zygisk modules specifically designed to hide root from apps using DenyList / allow-listing. Play Integrity Fix modules spoof the Play Integrity API verdict. These indicate active attempts to conceal root from this app.</string>
+    <string name="chk_ext_shamiko_solution">Remove hide modules from Magisk Manager → Modules.</string>
+    <string name="chk_ext_shamiko_name_nd">Detection-Bypass Modules</string>
+    <string name="chk_ext_shamiko_desc_nd">No Shamiko/ZygiskAssist detection-bypass modules found.</string>
+    <string name="chk_ext_shamiko_reason_nd">No known detection-bypass module directories or packages were found.</string>
+    <!-- ExtraRootDetector: Check 15 - Hidden System Bind-Mounts -->
+    <string name="chk_ext_sys_mounts_name">Suspicious System Bind-Mounts</string>
+    <string name="chk_ext_sys_mounts_desc">Root-framework bind-mounts over /system detected.</string>
+    <string name="chk_ext_sys_mounts_reason">Magisk and KernelSU modules replace files in /system by bind-mounting modified copies from /data/adb. Found bind-mounts: %1$s. These replace stock system files with module-provided versions.</string>
+    <string name="chk_ext_sys_mounts_solution">Remove root modules or uninstall the root framework.</string>
+    <string name="chk_ext_sys_mounts_name_nd">System Bind-Mounts</string>
+    <string name="chk_ext_sys_mounts_desc_nd">No suspicious /system bind-mounts found.</string>
+    <string name="chk_ext_sys_mounts_reason_nd">No root-framework (/data/adb) sourced bind-mounts over /system, /vendor or /product found.</string>
+    <string name="chk_ext_sys_mounts_desc_error">Could not read /proc/self/mountinfo.</string>
+    <string name="chk_ext_sys_mounts_solution_error">Ensure /proc/self/mountinfo is accessible.</string>
+
 </resources>

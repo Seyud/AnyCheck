@@ -64,41 +64,37 @@ class ExtraRootDetector(private val context: Context) {
             if (suspicious.isNotEmpty()) {
                 DetectionResult(
                     id = "ld_preload",
-                    name = "LD_PRELOAD / LD_LIBRARY_PATH Set",
+                    name = context.getString(R.string.chk_ext_ldpreload_name),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
-                    description = "Linker environment variable injection detected.",
-                    detailedReason = "Found: ${suspicious.joinToString(", ")}. " +
-                        "Setting LD_PRELOAD causes the dynamic linker to load an attacker-chosen " +
-                        "library before all others, enabling function interception in any process. " +
-                        "This is used by Frida gadget, Substrate-style hooks, and some su wrappers.",
-                    solution = "Remove any LD_PRELOAD/LD_LIBRARY_PATH from the environment. " +
-                        "Uninstall any hooking framework that injects via the linker.",
+                    description = context.getString(R.string.chk_ext_ldpreload_desc),
+                    detailedReason = context.getString(R.string.chk_ext_ldpreload_reason, suspicious.joinToString(", ")),
+                    solution = context.getString(R.string.chk_ext_ldpreload_solution),
                     technicalDetail = suspicious.joinToString("; ")
                 )
             } else {
                 DetectionResult(
                     id = "ld_preload",
-                    name = "LD_PRELOAD Environment",
+                    name = context.getString(R.string.chk_ext_ldpreload_name_nd),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
-                    description = "No LD_PRELOAD injection detected.",
-                    detailedReason = "LD_PRELOAD and LD_LIBRARY_PATH are not set to suspicious values.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ext_ldpreload_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_ldpreload_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "ld_preload",
-                name = "LD_PRELOAD Environment",
+                name = context.getString(R.string.chk_ext_ldpreload_name_nd),
                 category = DetectionCategory.ROOT_MANAGEMENT,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Could not read process environment.",
+                description = context.getString(R.string.chk_ext_ldpreload_desc_error),
                 detailedReason = "Failed to read /proc/self/environ: ${e.message}",
-                solution = "Ensure /proc/self/environ is accessible."
+                solution = context.getString(R.string.chk_ext_ldpreload_solution_error)
             )
         }
     }
@@ -126,41 +122,38 @@ class ExtraRootDetector(private val context: Context) {
             if (elevated) {
                 DetectionResult(
                     id = "capabilities",
-                    name = "Elevated Linux Capabilities",
+                    name = context.getString(R.string.chk_ext_caps_name),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Process has non-zero Linux capabilities.",
-                    detailedReason = "CapPrm=$capPrm, CapEff=$capEff. " +
-                        "Normal Android apps run with zero capabilities. " +
-                        "Non-zero values indicate this process was granted elevated Linux privileges, " +
-                        "which can happen when su or a root framework manipulates the process.",
-                    solution = "Revoke elevated capabilities. These are normally granted by root frameworks.",
+                    description = context.getString(R.string.chk_ext_caps_desc),
+                    detailedReason = context.getString(R.string.chk_ext_caps_reason, capPrm, capEff),
+                    solution = context.getString(R.string.chk_ext_caps_solution),
                     technicalDetail = "CapPrm=$capPrm CapEff=$capEff"
                 )
             } else {
                 DetectionResult(
                     id = "capabilities",
-                    name = "Linux Capabilities",
+                    name = context.getString(R.string.chk_ext_caps_name_nd),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Process has no elevated Linux capabilities.",
-                    detailedReason = "CapPrm=0 and CapEff=0 — normal for a sandboxed Android app.",
-                    solution = "No action required.",
+                    description = context.getString(R.string.chk_ext_caps_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_caps_reason_nd),
+                    solution = context.getString(R.string.no_action_required),
                     technicalDetail = "CapPrm=$capPrm CapEff=$capEff"
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "capabilities",
-                name = "Linux Capabilities",
+                name = context.getString(R.string.chk_ext_caps_name_nd),
                 category = DetectionCategory.ROOT_MANAGEMENT,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not read process status.",
+                description = context.getString(R.string.chk_ext_caps_desc_error),
                 detailedReason = "Failed: ${e.message}",
-                solution = "Ensure /proc/self/status is accessible."
+                solution = context.getString(R.string.chk_ext_caps_solution_error)
             )
         }
     }
@@ -198,40 +191,37 @@ class ExtraRootDetector(private val context: Context) {
             if (found.isNotEmpty()) {
                 DetectionResult(
                     id = "mountinfo_overlay",
-                    name = "Magisk/KSU Overlay Mounts Detected",
+                    name = context.getString(R.string.chk_ext_overlay_name),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
-                    description = "Root framework overlay mount entries found in /proc/self/mountinfo.",
-                    detailedReason = "/proc/self/mountinfo shows ${found.size} mount entry/entries sourced " +
-                        "from Magisk/KSU directories (/data/adb/magisk or /data/adb/ksu). " +
-                        "These are bind-mounts created by the root framework's module system " +
-                        "to overlay modified files over the original system partition.",
-                    solution = "Remove root framework modules or uninstall the root framework entirely.",
+                    description = context.getString(R.string.chk_ext_overlay_desc),
+                    detailedReason = context.getString(R.string.chk_ext_overlay_reason, found.size),
+                    solution = context.getString(R.string.chk_ext_overlay_solution),
                     technicalDetail = found.take(5).joinToString("\n")
                 )
             } else {
                 DetectionResult(
                     id = "mountinfo_overlay",
-                    name = "Root Overlay Mounts",
+                    name = context.getString(R.string.chk_ext_overlay_name_nd),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.CRITICAL,
-                    description = "No Magisk/KSU overlay mounts found.",
-                    detailedReason = "No root framework markers were found in /proc/self/mountinfo.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ext_overlay_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_overlay_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "mountinfo_overlay",
-                name = "Root Overlay Mounts",
+                name = context.getString(R.string.chk_ext_overlay_name_nd),
                 category = DetectionCategory.ROOT_MANAGEMENT,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Could not read /proc/self/mountinfo.",
+                description = context.getString(R.string.chk_ext_overlay_desc_error),
                 detailedReason = "Failed: ${e.message}",
-                solution = "Ensure /proc/self/mountinfo is accessible."
+                solution = context.getString(R.string.chk_ext_overlay_solution_error)
             )
         }
     }
@@ -249,39 +239,37 @@ class ExtraRootDetector(private val context: Context) {
             if (sbinTmpfs) {
                 DetectionResult(
                     id = "sbin_tmpfs",
-                    name = "tmpfs Mounted at /sbin",
+                    name = context.getString(R.string.chk_ext_sbin_tmpfs_name),
                     category = DetectionCategory.MAGISK,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "tmpfs is mounted over /sbin — legacy Magisk indicator.",
-                    detailedReason = "Magisk versions prior to v24 mounted a tmpfs over /sbin to store its " +
-                        "binaries and hide them from detection. " +
-                        "A tmpfs on /sbin on a production device is a strong Magisk indicator.",
-                    solution = "This is removed when Magisk is uninstalled.",
+                    description = context.getString(R.string.chk_ext_sbin_tmpfs_desc),
+                    detailedReason = context.getString(R.string.chk_ext_sbin_tmpfs_reason),
+                    solution = context.getString(R.string.chk_ext_sbin_tmpfs_solution),
                     technicalDetail = "/sbin mounted as tmpfs"
                 )
             } else {
                 DetectionResult(
                     id = "sbin_tmpfs",
-                    name = "tmpfs at /sbin",
+                    name = context.getString(R.string.chk_ext_sbin_tmpfs_name_nd),
                     category = DetectionCategory.MAGISK,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No tmpfs mount at /sbin.",
-                    detailedReason = "/sbin does not have a tmpfs mount.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ext_sbin_tmpfs_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_sbin_tmpfs_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "sbin_tmpfs",
-                name = "tmpfs at /sbin",
+                name = context.getString(R.string.chk_ext_sbin_tmpfs_name_nd),
                 category = DetectionCategory.MAGISK,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not read /proc/mounts.",
+                description = context.getString(R.string.chk_ext_sbin_tmpfs_desc_error),
                 detailedReason = "Failed: ${e.message}",
-                solution = "Ensure /proc/mounts is accessible."
+                solution = context.getString(R.string.chk_ext_sbin_tmpfs_solution_error)
             )
         }
     }
@@ -326,40 +314,37 @@ class ExtraRootDetector(private val context: Context) {
             if (suspiciousRootProcs.isNotEmpty()) {
                 DetectionResult(
                     id = "privileged_processes",
-                    name = "Unexpected Root Processes",
+                    name = context.getString(R.string.chk_ext_priv_proc_name),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Unexpected processes running as uid=0 (root).",
-                    detailedReason = "Found ${suspiciousRootProcs.size} unexpected root process(es): " +
-                        "${suspiciousRootProcs.take(10).joinToString(", ")}. " +
-                        "On a stock device, the set of uid=0 processes is fixed. " +
-                        "Extra root processes indicate active root frameworks (magiskd, ksud, etc.).",
-                    solution = "Stop or remove the root framework to eliminate unexpected root processes.",
+                    description = context.getString(R.string.chk_ext_priv_proc_desc),
+                    detailedReason = context.getString(R.string.chk_ext_priv_proc_reason, suspiciousRootProcs.size, suspiciousRootProcs.take(10).joinToString(", ")),
+                    solution = context.getString(R.string.chk_ext_priv_proc_solution),
                     technicalDetail = "Root processes: ${suspiciousRootProcs.joinToString("; ")}"
                 )
             } else {
                 DetectionResult(
                     id = "privileged_processes",
-                    name = "Privileged Processes",
+                    name = context.getString(R.string.chk_ext_priv_proc_name_nd),
                     category = DetectionCategory.ROOT_MANAGEMENT,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No unexpected uid=0 processes found.",
-                    detailedReason = "Only expected system processes were found running as root.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ext_priv_proc_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_priv_proc_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "privileged_processes",
-                name = "Privileged Processes",
+                name = context.getString(R.string.chk_ext_priv_proc_name_nd),
                 category = DetectionCategory.ROOT_MANAGEMENT,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not enumerate processes.",
+                description = context.getString(R.string.chk_ext_priv_proc_desc_error),
                 detailedReason = "Failed: ${e.message}",
-                solution = "Ensure /proc is accessible."
+                solution = context.getString(R.string.chk_ext_priv_proc_solution_error)
             )
         }
     }
@@ -393,28 +378,25 @@ class ExtraRootDetector(private val context: Context) {
         return if (found.isNotEmpty()) {
             DetectionResult(
                 id = "terminal_hacking_apps",
-                name = "Terminal / Hacking Apps Detected",
+                name = context.getString(R.string.chk_ext_hacking_apps_name),
                 category = DetectionCategory.ADB_DEBUG,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "Terminal emulator or security tool apps installed.",
-                detailedReason = "Found ${found.size} app(s): " +
-                    found.values.joinToString(", ") + ". " +
-                    "These apps provide terminal access, SSH, scripting environments, " +
-                    "or advanced file system access. Many require or facilitate root access.",
-                solution = "Uninstall terminal and hacking apps if not needed for legitimate use.",
+                description = context.getString(R.string.chk_ext_hacking_apps_desc),
+                detailedReason = context.getString(R.string.chk_ext_hacking_apps_reason, found.size, found.values.joinToString(", ")),
+                solution = context.getString(R.string.chk_ext_hacking_apps_solution),
                 technicalDetail = found.keys.joinToString("; ")
             )
         } else {
             DetectionResult(
                 id = "terminal_hacking_apps",
-                name = "Terminal / Hacking Apps",
+                name = context.getString(R.string.chk_ext_hacking_apps_name_nd),
                 category = DetectionCategory.ADB_DEBUG,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "No terminal emulator or hacking apps detected.",
-                detailedReason = "No known terminal or security tool packages were found.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ext_hacking_apps_desc_nd),
+                detailedReason = context.getString(R.string.chk_ext_hacking_apps_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -433,52 +415,48 @@ class ExtraRootDetector(private val context: Context) {
             when {
                 monthsOld >= 24 -> DetectionResult(
                     id = "security_patch_age",
-                    name = "Security Patch Very Outdated",
+                    name = context.getString(R.string.chk_ext_sec_patch_name_critical),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Security patch is ${monthsOld} months old (>= 2 years).",
-                    detailedReason = "Security patch level: $patchStr (${monthsOld} months ago). " +
-                        "Rooted devices often avoid OTA updates to preserve root access, " +
-                        "resulting in severely outdated security patches. " +
-                        "An extremely old patch level exposes the device to known CVEs.",
-                    solution = "Apply all available OTA/security updates.",
+                    description = context.getString(R.string.chk_ext_sec_patch_desc_critical, monthsOld),
+                    detailedReason = context.getString(R.string.chk_ext_sec_patch_reason_critical, patchStr, monthsOld),
+                    solution = context.getString(R.string.chk_ext_sec_patch_solution_critical),
                     technicalDetail = "SECURITY_PATCH=$patchStr monthsOld=$monthsOld"
                 )
                 monthsOld >= 12 -> DetectionResult(
                     id = "security_patch_age",
-                    name = "Security Patch Outdated",
+                    name = context.getString(R.string.chk_ext_sec_patch_name_warn),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.MEDIUM,
-                    description = "Security patch is ${monthsOld} months old (>= 1 year).",
-                    detailedReason = "Security patch level: $patchStr (${monthsOld} months ago). " +
-                        "Keeping the patch level current is important for device security.",
-                    solution = "Apply all available security updates from the manufacturer.",
+                    description = context.getString(R.string.chk_ext_sec_patch_desc_warn, monthsOld),
+                    detailedReason = context.getString(R.string.chk_ext_sec_patch_reason_warn, patchStr, monthsOld),
+                    solution = context.getString(R.string.chk_ext_sec_patch_solution_warn),
                     technicalDetail = "SECURITY_PATCH=$patchStr monthsOld=$monthsOld"
                 )
                 else -> DetectionResult(
                     id = "security_patch_age",
-                    name = "Security Patch Level",
+                    name = context.getString(R.string.chk_ext_sec_patch_name_nd),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.MEDIUM,
-                    description = "Security patch level is reasonably current (< 12 months).",
-                    detailedReason = "Patch date: $patchStr (${monthsOld} months ago).",
-                    solution = "No action required.",
+                    description = context.getString(R.string.chk_ext_sec_patch_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_sec_patch_reason_nd, patchStr, monthsOld),
+                    solution = context.getString(R.string.no_action_required),
                     technicalDetail = "SECURITY_PATCH=$patchStr monthsOld=$monthsOld"
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "security_patch_age",
-                name = "Security Patch Level",
+                name = context.getString(R.string.chk_ext_sec_patch_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "Could not determine security patch age.",
+                description = context.getString(R.string.chk_ext_sec_patch_desc_error),
                 detailedReason = "Error: ${e.message}",
-                solution = "Check Settings → About Phone → Android security patch level."
+                solution = context.getString(R.string.chk_ext_sec_patch_solution_error)
             )
         }
     }
@@ -492,29 +470,25 @@ class ExtraRootDetector(private val context: Context) {
         return if (isTestKeys) {
             DetectionResult(
                 id = "extra_test_keys",
-                name = "Test-Keys Build Detected",
+                name = context.getString(R.string.chk_ext_test_keys_name),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Device is running a test-keys signed build.",
-                detailedReason = "ro.build.tags=$buildTags. " +
-                    "Production (retail) Android builds are signed with release keys and report 'release-keys'. " +
-                    "'test-keys' means the build was signed with Android's publicly known AOSP test keys, " +
-                    "which is typical for custom ROMs (LineageOS, AOSP builds) and developer images. " +
-                    "Such builds often have root access or weaker security policies.",
-                solution = "Use an OEM-provided, release-keys signed official ROM.",
+                description = context.getString(R.string.chk_ext_test_keys_desc),
+                detailedReason = context.getString(R.string.chk_ext_test_keys_reason, buildTags),
+                solution = context.getString(R.string.chk_ext_test_keys_solution),
                 technicalDetail = "ro.build.tags=$buildTags"
             )
         } else {
             DetectionResult(
                 id = "extra_test_keys",
-                name = "Build Signing Keys",
+                name = context.getString(R.string.chk_ext_test_keys_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Build is signed with release keys.",
-                detailedReason = "ro.build.tags=$buildTags — not test-keys.",
-                solution = "No action required.",
+                description = context.getString(R.string.chk_ext_test_keys_desc_nd),
+                detailedReason = context.getString(R.string.chk_ext_test_keys_reason_nd, buildTags),
+                solution = context.getString(R.string.no_action_required),
                 technicalDetail = "ro.build.tags=$buildTags"
             )
         }
@@ -548,27 +522,25 @@ class ExtraRootDetector(private val context: Context) {
         ) {
             DetectionResult(
                 id = "oem_unlock",
-                name = "OEM Unlock Enabled",
+                name = context.getString(R.string.chk_ext_oem_unlock_name),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "OEM unlock is currently enabled.",
-                detailedReason = "OEM unlock enabled: ${indicators.joinToString(", ")}. " +
-                    "When OEM unlock is allowed, the user can unlock the bootloader from Developer Options. " +
-                    "An enabled OEM unlock setting indicates the device is prepared for rooting.",
-                solution = "Disable OEM unlock via Settings → Developer Options → OEM unlocking → toggle off.",
+                description = context.getString(R.string.chk_ext_oem_unlock_desc),
+                detailedReason = context.getString(R.string.chk_ext_oem_unlock_reason, indicators.joinToString(", ")),
+                solution = context.getString(R.string.chk_ext_oem_unlock_solution),
                 technicalDetail = indicators.joinToString("; ")
             )
         } else {
             DetectionResult(
                 id = "oem_unlock",
-                name = "OEM Unlock",
+                name = context.getString(R.string.chk_ext_oem_unlock_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "OEM unlock does not appear to be enabled.",
-                detailedReason = "No OEM unlock enabled indicators found.",
-                solution = "No action required.",
+                description = context.getString(R.string.chk_ext_oem_unlock_desc_nd),
+                detailedReason = context.getString(R.string.chk_ext_oem_unlock_reason_nd),
+                solution = context.getString(R.string.no_action_required),
                 technicalDetail = indicators.joinToString("; ").ifEmpty { "no indicators" }
             )
         }
@@ -597,39 +569,37 @@ class ExtraRootDetector(private val context: Context) {
                 }
                 DetectionResult(
                     id = "mock_location",
-                    name = "Mock Locations Enabled",
+                    name = context.getString(R.string.chk_ext_mock_loc_name),
                     category = DetectionCategory.ADB_DEBUG,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.MEDIUM,
-                    description = "Mock location provider is enabled.",
-                    detailedReason = "Mock locations allow any app to supply fake GPS coordinates. " +
-                        "This is commonly used for GPS spoofing and game cheating. " +
-                        "Detail: $detail",
-                    solution = "Disable mock location: Settings → Developer Options → Mock location app → None.",
+                    description = context.getString(R.string.chk_ext_mock_loc_desc),
+                    detailedReason = context.getString(R.string.chk_ext_mock_loc_reason, detail),
+                    solution = context.getString(R.string.chk_ext_mock_loc_solution),
                     technicalDetail = detail.trim()
                 )
             } else {
                 DetectionResult(
                     id = "mock_location",
-                    name = "Mock Locations",
+                    name = context.getString(R.string.chk_ext_mock_loc_name_nd),
                     category = DetectionCategory.ADB_DEBUG,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.MEDIUM,
-                    description = "Mock locations are not enabled.",
-                    detailedReason = "allow_mock_location=0 and no mock location app is configured.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ext_mock_loc_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_mock_loc_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "mock_location",
-                name = "Mock Locations",
+                name = context.getString(R.string.chk_ext_mock_loc_name_nd),
                 category = DetectionCategory.ADB_DEBUG,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "Could not read mock location settings.",
+                description = context.getString(R.string.chk_ext_mock_loc_desc_error),
                 detailedReason = "Settings query failed: ${e.message}",
-                solution = "Check manually in Settings → Developer Options."
+                solution = context.getString(R.string.chk_ext_mock_loc_solution_error)
             )
         }
     }
@@ -657,28 +627,25 @@ class ExtraRootDetector(private val context: Context) {
         return if (openPorts.isNotEmpty()) {
             DetectionResult(
                 id = "wireless_adb",
-                name = "ADB over Wi-Fi Active",
+                name = context.getString(R.string.chk_ext_wireless_adb_name),
                 category = DetectionCategory.ADB_DEBUG,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "ADB over Wi-Fi port is listening.",
-                detailedReason = "Port(s) ${openPorts.joinToString(", ")} are in LISTEN state. " +
-                    "Port 5555 is the ADB-over-Wi-Fi default. " +
-                    "Any device on the same network can connect and issue ADB commands, " +
-                    "including installing/removing apps and (on debug builds) gaining a shell.",
-                solution = "Disable via 'adb disconnect' or Settings → Wireless Debugging → toggle off.",
+                description = context.getString(R.string.chk_ext_wireless_adb_desc),
+                detailedReason = context.getString(R.string.chk_ext_wireless_adb_reason, openPorts.joinToString(", ")),
+                solution = context.getString(R.string.chk_ext_wireless_adb_solution),
                 technicalDetail = "Listening ports: ${openPorts.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "wireless_adb",
-                name = "ADB over Wi-Fi",
+                name = context.getString(R.string.chk_ext_wireless_adb_name_nd),
                 category = DetectionCategory.ADB_DEBUG,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "No ADB Wi-Fi ports detected as listening.",
-                detailedReason = "Ports 5555/5037 are not in LISTEN state.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ext_wireless_adb_desc_nd),
+                detailedReason = context.getString(R.string.chk_ext_wireless_adb_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -700,28 +667,25 @@ class ExtraRootDetector(private val context: Context) {
         return if (found.isNotEmpty()) {
             DetectionResult(
                 id = "extra_busybox",
-                name = "BusyBox Installed",
+                name = context.getString(R.string.chk_ext_busybox_name),
                 category = DetectionCategory.SU_BINARY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "BusyBox binary found.",
-                detailedReason = "Found: ${found.joinToString(", ")}. " +
-                    "BusyBox is a suite of Unix command-line utilities (ls, cp, wget, etc.) " +
-                    "commonly installed alongside root to extend shell capabilities. " +
-                    "Presence in /system/xbin or /sbin usually requires root to have been installed.",
-                solution = "Remove via BusyBox uninstaller app or manually delete the binary.",
+                description = context.getString(R.string.chk_ext_busybox_desc),
+                detailedReason = context.getString(R.string.chk_ext_busybox_reason, found.joinToString(", ")),
+                solution = context.getString(R.string.chk_ext_busybox_solution),
                 technicalDetail = "Paths: ${found.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "extra_busybox",
-                name = "BusyBox",
+                name = context.getString(R.string.chk_ext_busybox_name_nd),
                 category = DetectionCategory.SU_BINARY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
-                description = "BusyBox not found.",
-                detailedReason = "No BusyBox binary found at common locations.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ext_busybox_desc_nd),
+                detailedReason = context.getString(R.string.chk_ext_busybox_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -765,27 +729,25 @@ class ExtraRootDetector(private val context: Context) {
         return if (suidFound.isNotEmpty()) {
             DetectionResult(
                 id = "su_suid",
-                name = "SUID su Binary Detected",
+                name = context.getString(R.string.chk_ext_su_suid_name),
                 category = DetectionCategory.SU_BINARY,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "SUID root su binary found.",
-                detailedReason = "SUID binaries: ${suidFound.joinToString(", ")}. " +
-                    "A SUID root su binary can be executed by any user to gain root privileges. " +
-                    "This is the classic root-granting mechanism on Unix/Android.",
-                solution = "Remove the su binary or revoke its SUID bit: 'chmod 755 /system/bin/su'",
+                description = context.getString(R.string.chk_ext_su_suid_desc),
+                detailedReason = context.getString(R.string.chk_ext_su_suid_reason, suidFound.joinToString(", ")),
+                solution = context.getString(R.string.chk_ext_su_suid_solution),
                 technicalDetail = "SUID su: ${suidFound.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "su_suid",
-                name = "SUID su Binary",
+                name = context.getString(R.string.chk_ext_su_suid_name_nd),
                 category = DetectionCategory.SU_BINARY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "No SUID su binary detected.",
-                detailedReason = "No SUID root su binary was found at common paths.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ext_su_suid_desc_nd),
+                detailedReason = context.getString(R.string.chk_ext_su_suid_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -820,29 +782,25 @@ class ExtraRootDetector(private val context: Context) {
             foundPkgs.forEach { all.add(it) }
             DetectionResult(
                 id = "shamiko_zygiskassist",
-                name = "Detection-Bypass Module Found",
+                name = context.getString(R.string.chk_ext_shamiko_name),
                 category = DetectionCategory.ROOT_MANAGEMENT,
                 status = DetectionStatus.DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "Root detection bypass module detected.",
-                detailedReason = "Found: ${all.joinToString(", ")}. " +
-                    "Shamiko, Zygisk-Assistant, and ReZygisk are Zygisk modules specifically designed " +
-                    "to hide root from apps using DenyList / allow-listing. " +
-                    "Play Integrity Fix modules spoof the Play Integrity API verdict. " +
-                    "These indicate active attempts to conceal root from this app.",
-                solution = "Remove hide modules from Magisk Manager → Modules.",
+                description = context.getString(R.string.chk_ext_shamiko_desc),
+                detailedReason = context.getString(R.string.chk_ext_shamiko_reason, all.joinToString(", ")),
+                solution = context.getString(R.string.chk_ext_shamiko_solution),
                 technicalDetail = "Dirs: ${foundDirs.joinToString("; ")} | Pkgs: ${foundPkgs.joinToString("; ")}"
             )
         } else {
             DetectionResult(
                 id = "shamiko_zygiskassist",
-                name = "Detection-Bypass Modules",
+                name = context.getString(R.string.chk_ext_shamiko_name_nd),
                 category = DetectionCategory.ROOT_MANAGEMENT,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.CRITICAL,
-                description = "No Shamiko/ZygiskAssist detection-bypass modules found.",
-                detailedReason = "No known detection-bypass module directories or packages were found.",
-                solution = "No action required."
+                description = context.getString(R.string.chk_ext_shamiko_desc_nd),
+                detailedReason = context.getString(R.string.chk_ext_shamiko_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }
@@ -884,40 +842,37 @@ class ExtraRootDetector(private val context: Context) {
             if (suspiciousBinds.isNotEmpty()) {
                 DetectionResult(
                     id = "hidden_system_mounts",
-                    name = "Suspicious System Bind-Mounts",
+                    name = context.getString(R.string.chk_ext_sys_mounts_name),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "Root-framework bind-mounts over /system detected.",
-                    detailedReason = "Magisk and KernelSU modules replace files in /system by " +
-                        "bind-mounting modified copies from /data/adb. " +
-                        "Found bind-mounts: ${suspiciousBinds.take(5).joinToString(", ")}. " +
-                        "These replace stock system files with module-provided versions.",
-                    solution = "Remove root modules or uninstall the root framework.",
+                    description = context.getString(R.string.chk_ext_sys_mounts_desc),
+                    detailedReason = context.getString(R.string.chk_ext_sys_mounts_reason, suspiciousBinds.take(5).joinToString(", ")),
+                    solution = context.getString(R.string.chk_ext_sys_mounts_solution),
                     technicalDetail = "Mounts: ${suspiciousBinds.take(10).joinToString("; ")}"
                 )
             } else {
                 DetectionResult(
                     id = "hidden_system_mounts",
-                    name = "System Bind-Mounts",
+                    name = context.getString(R.string.chk_ext_sys_mounts_name_nd),
                     category = DetectionCategory.SYSTEM_INTEGRITY,
                     status = DetectionStatus.NOT_DETECTED,
                     riskLevel = RiskLevel.HIGH,
-                    description = "No suspicious /system bind-mounts found.",
-                    detailedReason = "No root-framework (/data/adb) sourced bind-mounts over /system, /vendor or /product found.",
-                    solution = "No action required."
+                    description = context.getString(R.string.chk_ext_sys_mounts_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_sys_mounts_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
                 )
             }
         } catch (e: Exception) {
             DetectionResult(
                 id = "hidden_system_mounts",
-                name = "System Bind-Mounts",
+                name = context.getString(R.string.chk_ext_sys_mounts_name_nd),
                 category = DetectionCategory.SYSTEM_INTEGRITY,
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.HIGH,
-                description = "Could not read /proc/self/mountinfo.",
+                description = context.getString(R.string.chk_ext_sys_mounts_desc_error),
                 detailedReason = "Failed: ${e.message}",
-                solution = "Ensure /proc/self/mountinfo is accessible."
+                solution = context.getString(R.string.chk_ext_sys_mounts_solution_error)
             )
         }
     }
