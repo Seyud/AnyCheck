@@ -1241,6 +1241,15 @@
     <string name="chk_ext_netlink_reason_nd">All Netlink sockets in /proc/net/netlink use standard Android protocol numbers (0–22) with normal socket counts. No anomalous kernel IPC detected.</string>
     <string name="chk_ext_netlink_solution">Update KernelSU or Magisk to a version that hides its Netlink channels. There is currently no reliable user-space workaround for this detection method.</string>
 
+    <!-- ExtraRootDetector: Check 25 — audit log process detection -->
+    <string name="chk_ext_audit_log_name">Root Process via Audit Log Detected</string>
+    <string name="chk_ext_audit_log_name_nd">Audit Log Process Check</string>
+    <string name="chk_ext_audit_log_desc">Root daemon SELinux contexts were found in kernel AVC audit log entries, revealing active root processes.</string>
+    <string name="chk_ext_audit_log_desc_nd">No root process indicators found in the kernel audit log.</string>
+    <string name="chk_ext_audit_log_reason">Found in kernel AVC audit log: %1$s. Root daemons (magiskd, lspd, kpatchd) leave distinctive SELinux context strings (u:r:magisk:s0, u:r:su:s0, u:r:zygisk:s0) in AVC denial records even when they hide themselves from the standard process table. The native probe reads /dev/kmsg directly using raw syscalls that bypass Java-layer hooks.</string>
+    <string name="chk_ext_audit_log_reason_nd">No suspicious SELinux contexts or root process comm= values were found in /dev/kmsg or kernel logcat entries. The audit log appears clean.</string>
+    <string name="chk_ext_audit_log_solution">Install the ZN-AuditPatch Magisk module to suppress root-related AVC log entries, or use SUSFS\'s audit log suppression feature. Alternatively, apply the Android security patch from September 2025 which addresses the audit log read vulnerability.</string>
+
 
     <!-- LunaDetector: Check 1 - LSPosed API Property -->
     <string name="chk_luna_lsp_prop_name">LSPosed API Property Detected</string>

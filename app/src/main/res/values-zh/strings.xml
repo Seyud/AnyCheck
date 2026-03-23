@@ -1232,6 +1232,15 @@
     <string name="chk_ext_netlink_reason_nd">/proc/net/netlink 中的所有 Netlink 套接字均使用标准 Android 协议编号（0–22），套接字数量正常。未检测到异常内核 IPC。</string>
     <string name="chk_ext_netlink_solution">将 KernelSU 或 Magisk 更新到能够隐藏其 Netlink 通道的版本。目前此检测方法没有可靠的用户空间解决方案。</string>
 
+    <!-- ExtraRootDetector: Check 25 — audit log process detection -->
+    <string name="chk_ext_audit_log_name">通过审计日志检测到 Root 进程</string>
+    <string name="chk_ext_audit_log_name_nd">审计日志进程检测</string>
+    <string name="chk_ext_audit_log_desc">在内核 AVC 审计日志条目中发现 Root 守护进程的 SELinux 上下文，揭示了活跃的 Root 进程。</string>
+    <string name="chk_ext_audit_log_desc_nd">在内核审计日志中未发现 Root 进程指标。</string>
+    <string name="chk_ext_audit_log_reason">在内核 AVC 审计日志中发现：%1$s。Root 守护进程（magiskd、lspd、kpatchd）即使从标准进程表中隐藏自身，也会在 AVC 拒绝记录中留下独特的 SELinux 上下文字符串（u:r:magisk:s0、u:r:su:s0、u:r:zygisk:s0）。原生探针使用绕过 Java 层 Hook 的原始系统调用直接读取 /dev/kmsg。</string>
+    <string name="chk_ext_audit_log_reason_nd">在 /dev/kmsg 或内核 logcat 条目中未发现可疑的 SELinux 上下文或 Root 进程 comm= 值。审计日志看起来是干净的。</string>
+    <string name="chk_ext_audit_log_solution">安装 ZN-AuditPatch Magisk 模块以抑制与 Root 相关的 AVC 日志条目，或使用 SUSFS 的审计日志抑制功能。或者，应用 2025 年 9 月的 Android 安全更新，该更新修复了审计日志读取漏洞。</string>
+
 
     <!-- LunaDetector: Check 1 - LSPosed API Property -->
     <string name="chk_luna_lsp_prop_name">检测到 LSPosed API 属性</string>

@@ -46,7 +46,8 @@ class ExtraRootDetector(private val context: Context) {
         checkDex2oatAnomaly(),
         checkScenePortOccupied(),
         checkHiddenProcessGroups(),
-        checkNetlinkSocketAnomaly()
+        checkNetlinkSocketAnomaly(),
+        checkAuditLogProcesses()
     )
 
     // ----------------------------------------------------------------
@@ -1227,6 +1228,11 @@ class ExtraRootDetector(private val context: Context) {
                     anomalies.add("lspd dex2oat mapping in /proc/self/maps")
                 }
             } catch (_: Exception) {}
+            // Check 4: native stat() probe (bypasses Java-layer File.exists() hooks)
+            val nativeFindings = NativeDetector.detectDex2oatNative()
+            if (nativeFindings.isNotEmpty()) {
+                nativeFindings.split("; ").filter { it.isNotEmpty() }.forEach { anomalies.add("native: $it") }
+            }
 
             if (anomalies.isNotEmpty()) {
                 DetectionResult(
@@ -1441,6 +1447,14 @@ class ExtraRootDetector(private val context: Context) {
                     }
                 }
             }
+            // Also run native probe (uses raw read(2) syscalls, harder to hook)
+            val nativeFindings = NativeDetector.detectNetlinkNative()
+            if (nativeFindings.isNotEmpty()) {
+                nativeFindings.split("; ").filter { it.isNotEmpty() }.forEach { f ->
+                    val entry = "native: $f"
+                    if (!anomalies.contains(entry)) anomalies.add(entry)
+                }
+            }
             if (anomalies.isNotEmpty()) {
                 DetectionResult(
                     id = "netlink_anomaly",
@@ -1473,6 +1487,92 @@ class ExtraRootDetector(private val context: Context) {
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
                 description = context.getString(R.string.chk_ext_netlink_desc_nd),
+                detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    /**
+     * Check 25: Audit log process detection.
+     *
+     * Reads kernel SELinux audit log entries (AVC denials) from /dev/kmsg via the
+     * native layer (raw open/read syscalls that bypass Java-layer hooks).  Root
+     * daemon processes (magiskd, lspd, kpatchd) leave distinctive SELinux context
+     * strings in AVC denials even when hidden from the process table.
+     *
+     * The article references "审计日志漏洞读取(avc)" — ZN-AuditPatch and SUSFS
+     * are the typical countermeasures.
+     *
+     * Chunqiu Detector item: "ROOT进程" (via audit log)
+     */
+    private fun checkAuditLogProcesses(): DetectionResult {
+        val findings = mutableListOf<String>()
+        return try {
+            // Strategy 1: native /dev/kmsg + logcat probe (bypasses Java hooks)
+            val nativeResult = NativeDetector.detectAuditLog()
+            if (nativeResult.isNotEmpty()) {
+                nativeResult.split("; ").filter { it.isNotEmpty() }.forEach { findings.add(it) }
+            }
+            // Strategy 2: Java-level logcat -b kernel fallback (broader compatibility)
+            if (findings.isEmpty()) {
+                try {
+                    val proc = Runtime.getRuntime().exec(arrayOf("logcat", "-b", "kernel", "-d", "-t", "200"))
+                    val reader = BufferedReader(InputStreamReader(proc.inputStream))
+                    val rootContexts = listOf("u:r:magisk:", "u:r:su:", "u:r:zygisk:")
+                    val rootComms = listOf("magiskd", "magisk64", "magisk32", "lspd", "kpatchd")
+                    var line: String?
+                    var count = 0
+                    while (reader.readLine().also { line = it } != null && count < 500) {
+                        val l = line ?: break
+                        if (l.contains("avc:") || l.contains("type=AVC")) {
+                            rootContexts.forEach { ctx ->
+                                if (l.contains(ctx)) findings.add("avc_ctx:$ctx")
+                            }
+                            rootComms.forEach { comm ->
+                                if (l.contains("comm=\"$comm\"")) findings.add("avc_comm:$comm")
+                            }
+                        }
+                        count++
+                    }
+                    reader.close()
+                    proc.destroy()
+                } catch (_: Exception) {}
+            }
+
+            if (findings.isNotEmpty()) {
+                val deduped = findings.distinct()
+                DetectionResult(
+                    id = "audit_log_root_process",
+                    name = context.getString(R.string.chk_ext_audit_log_name),
+                    category = DetectionCategory.ROOT_MANAGEMENT,
+                    status = DetectionStatus.DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_ext_audit_log_desc),
+                    detailedReason = context.getString(R.string.chk_ext_audit_log_reason, deduped.take(5).joinToString("; ")),
+                    solution = context.getString(R.string.chk_ext_audit_log_solution),
+                    technicalDetail = deduped.take(10).joinToString("; ")
+                )
+            } else {
+                DetectionResult(
+                    id = "audit_log_root_process",
+                    name = context.getString(R.string.chk_ext_audit_log_name_nd),
+                    category = DetectionCategory.ROOT_MANAGEMENT,
+                    status = DetectionStatus.NOT_DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_ext_audit_log_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_audit_log_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
+                )
+            }
+        } catch (e: Exception) {
+            DetectionResult(
+                id = "audit_log_root_process",
+                name = context.getString(R.string.chk_ext_audit_log_name_nd),
+                category = DetectionCategory.ROOT_MANAGEMENT,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_ext_audit_log_desc_nd),
                 detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
                 solution = context.getString(R.string.no_action_required)
             )
