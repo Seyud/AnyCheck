@@ -1355,8 +1355,8 @@ class ExtraRootDetector(private val context: Context) {
         val suspiciousProcs = mutableListOf<String>()
         return try {
             val procDir = File("/proc")
-            val pidDirs = procDir.listFiles { f ->
-                f.isDirectory && f.name.all { c -> c.isDigit() }
+            val pidDirs = procDir.listFiles { _, name ->
+                name.all { c -> c.isDigit() }
             } ?: emptyArray()
             val allPids = pidDirs.map { it.name.toInt() }.toSet()
             pidDirs.forEach { pidDir ->

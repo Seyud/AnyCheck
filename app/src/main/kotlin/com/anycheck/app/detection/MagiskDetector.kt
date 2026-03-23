@@ -476,18 +476,16 @@ class MagiskDetector(private val context: Context) {
         val found = mutableListOf<String>()
         return try {
             val procDir = File("/proc")
-            procDir.listFiles()?.forEach { pidDir ->
-                if (pidDir.isDirectory && pidDir.name.all { it.isDigit() }) {
-                    try {
-                        val cmdline = File(pidDir, "cmdline").readText()
-                            .replace("\u0000", " ").trim()
-                        magiskProcessNames.forEach { name ->
-                            if (cmdline.contains(name, ignoreCase = true) && !found.contains(cmdline)) {
-                                found.add(cmdline.take(50))
-                            }
+            procDir.listFiles { _, name -> name.all { it.isDigit() } }?.forEach { pidDir ->
+                try {
+                    val cmdline = File(pidDir, "cmdline").readText()
+                        .replace("\u0000", " ").trim()
+                    magiskProcessNames.forEach { name ->
+                        if (cmdline.contains(name, ignoreCase = true) && !found.contains(cmdline)) {
+                            found.add(cmdline.take(50))
                         }
-                    } catch (_: Exception) {}
-                }
+                    }
+                } catch (_: Exception) {}
             }
             if (found.isNotEmpty()) {
                 DetectionResult(
@@ -777,8 +775,7 @@ class MagiskDetector(private val context: Context) {
 
             // Also scan other processes' SELinux contexts for magisk
             val procDir = File("/proc")
-            procDir.listFiles()?.forEach { pidDir ->
-                if (!pidDir.isDirectory || !pidDir.name.all { it.isDigit() }) return@forEach
+            procDir.listFiles { _, name -> name.all { it.isDigit() } }?.forEach { pidDir ->
                 try {
                     val ctx = File(pidDir, "attr/current").readText().trim()
                     if (magiskContexts.any { ctx.contains(it, ignoreCase = true) }) {
@@ -1003,8 +1000,7 @@ class MagiskDetector(private val context: Context) {
         val foundDaemons = mutableListOf<String>()
 
         try {
-            File("/proc").listFiles()?.forEach { pidDir ->
-                if (!pidDir.isDirectory || !pidDir.name.all { it.isDigit() }) return@forEach
+            File("/proc").listFiles { _, name -> name.all { it.isDigit() } }?.forEach { pidDir ->
                 try {
                     val cmdline = File(pidDir, "cmdline").readText()
                         .replace('\u0000', ' ').trim()
