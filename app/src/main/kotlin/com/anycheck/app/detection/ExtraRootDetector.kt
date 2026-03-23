@@ -42,7 +42,11 @@ class ExtraRootDetector(private val context: Context) {
         checkSuspiciousToolFiles(),
         checkDebugRamdiskMount(),
         checkMtManagerFiles(),
-        checkKernelDirtySuffix()
+        checkKernelDirtySuffix(),
+        checkDex2oatAnomaly(),
+        checkScenePortOccupied(),
+        checkHiddenProcessGroups(),
+        checkNetlinkSocketAnomaly()
     )
 
     // ----------------------------------------------------------------
@@ -1181,6 +1185,294 @@ class ExtraRootDetector(private val context: Context) {
                 status = DetectionStatus.NOT_DETECTED,
                 riskLevel = RiskLevel.MEDIUM,
                 description = context.getString(R.string.chk_ext_kernel_dirty_desc_nd),
+                detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    /**
+     * Check 21: dex2oat anomaly detection.
+     *
+     * LSPosed and some Xposed forks inject code by creating a custom dex2oat compiler filter
+     * or leaving behind residual .odex/.oat artefacts in unexpected locations. Additionally,
+     * LSPosed rewrites the dex2oat binary path in system properties so that its own wrapper
+     * is called instead. Detecting a non-standard dex2oat path or the presence of LSPosed
+     * dex2oat helper files is a reliable hook-framework indicator.
+     *
+     * Chunqiu Detector item: "Miscellaneous Check（a）" — dex2oat (LSP problem)
+     */
+    private fun checkDex2oatAnomaly(): DetectionResult {
+        val anomalies = mutableListOf<String>()
+        return try {
+            // Check 1: non-standard compiler filter
+            val dex2oatFilter = getSystemProperty("dalvik.vm.dex2oat-filter")
+            val knownFilters = setOf("speed-profile", "speed", "quicken", "space-profile", "space",
+                "everything", "verify", "interpret-only", "time", "")
+            if (dex2oatFilter.isNotEmpty() && dex2oatFilter !in knownFilters) {
+                anomalies.add("dalvik.vm.dex2oat-filter=$dex2oatFilter (non-standard)")
+            }
+            // Check 2: LSPosed dex2oat wrapper files
+            val lspDex2oatPaths = listOf(
+                "/data/adb/lspd/dex2oat",
+                "/data/adb/lspd/bin/dex2oat",
+                "/data/misc/lspd/dex2oat",
+                "/data/adb/modules/zygisk_lsposed/dex2oat"
+            )
+            lspDex2oatPaths.filter { File(it).exists() }.forEach { anomalies.add("LSPosed dex2oat wrapper: $it") }
+            // Check 3: lspd dex2oat mapping in /proc/self/maps
+            try {
+                val maps = File("/proc/self/maps").readText()
+                if (maps.contains("lspd") && maps.contains("dex2oat", ignoreCase = true)) {
+                    anomalies.add("lspd dex2oat mapping in /proc/self/maps")
+                }
+            } catch (_: Exception) {}
+
+            if (anomalies.isNotEmpty()) {
+                DetectionResult(
+                    id = "dex2oat_anomaly",
+                    name = context.getString(R.string.chk_ext_dex2oat_name),
+                    category = DetectionCategory.XPOSED,
+                    status = DetectionStatus.DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_ext_dex2oat_desc),
+                    detailedReason = context.getString(R.string.chk_ext_dex2oat_reason, anomalies.joinToString("; ")),
+                    solution = context.getString(R.string.chk_ext_dex2oat_solution),
+                    technicalDetail = anomalies.joinToString("; ")
+                )
+            } else {
+                DetectionResult(
+                    id = "dex2oat_anomaly",
+                    name = context.getString(R.string.chk_ext_dex2oat_name_nd),
+                    category = DetectionCategory.XPOSED,
+                    status = DetectionStatus.NOT_DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_ext_dex2oat_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_dex2oat_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
+                )
+            }
+        } catch (e: Exception) {
+            DetectionResult(
+                id = "dex2oat_anomaly",
+                name = context.getString(R.string.chk_ext_dex2oat_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_ext_dex2oat_desc_nd),
+                detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    /**
+     * Check 22: Scene toolkit port occupancy detection.
+     *
+     * Scene (一个场景/Fkscene) is a popular Android performance/battery tweaking app
+     * that runs an accessibility service and a local HTTP server on a fixed port (typically
+     * 18080 or 18081). Detecting its package name or an open socket at these ports
+     * indicates Scene is running.
+     *
+     * Chunqiu Detector item: "检测到Scene端口占用"
+     */
+    private fun checkScenePortOccupied(): DetectionResult {
+        val scenePackages = listOf("com.omarea.vtools", "com.omarea.scene", "com.omarea.vtools.pro")
+        val foundPkgs = scenePackages.filter { packageExists(it) }
+        val scenePorts = listOf(18080, 18081, 9999)
+        val openPorts = mutableListOf<Int>()
+        return try {
+            listOf("/proc/net/tcp", "/proc/net/tcp6").forEach { tcpFile ->
+                try {
+                    File(tcpFile).readLines().drop(1).forEach { line ->
+                        val parts = line.trim().split("\\s+".toRegex())
+                        if (parts.size >= 4 && parts[3] == "0A") {
+                            val portHex = parts[1].substringAfterLast(":")
+                            val port = portHex.toIntOrNull(16) ?: return@forEach
+                            if (port in scenePorts) openPorts.add(port)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+            val detected = foundPkgs.isNotEmpty() || openPorts.isNotEmpty()
+            if (detected) {
+                val indicators = mutableListOf<String>()
+                if (foundPkgs.isNotEmpty()) indicators.add("packages: ${foundPkgs.joinToString(", ")}")
+                if (openPorts.isNotEmpty()) indicators.add("ports: ${openPorts.joinToString(", ")}")
+                DetectionResult(
+                    id = "scene_port",
+                    name = context.getString(R.string.chk_ext_scene_port_name),
+                    category = DetectionCategory.SYSTEM_INTEGRITY,
+                    status = DetectionStatus.DETECTED,
+                    riskLevel = RiskLevel.LOW,
+                    description = context.getString(R.string.chk_ext_scene_port_desc),
+                    detailedReason = context.getString(R.string.chk_ext_scene_port_reason, indicators.joinToString("; ")),
+                    solution = context.getString(R.string.chk_ext_scene_port_solution),
+                    technicalDetail = indicators.joinToString("; ")
+                )
+            } else {
+                DetectionResult(
+                    id = "scene_port",
+                    name = context.getString(R.string.chk_ext_scene_port_name_nd),
+                    category = DetectionCategory.SYSTEM_INTEGRITY,
+                    status = DetectionStatus.NOT_DETECTED,
+                    riskLevel = RiskLevel.LOW,
+                    description = context.getString(R.string.chk_ext_scene_port_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_scene_port_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
+                )
+            }
+        } catch (e: Exception) {
+            DetectionResult(
+                id = "scene_port",
+                name = context.getString(R.string.chk_ext_scene_port_name_nd),
+                category = DetectionCategory.SYSTEM_INTEGRITY,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.LOW,
+                description = context.getString(R.string.chk_ext_scene_port_desc_nd),
+                detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    /**
+     * Check 23: Hidden process group detection.
+     *
+     * Some root-related processes hide from the normal process list but leave traces
+     * in /proc. By reading /proc directly and looking for PIDs whose thread-group leader
+     * (Tgid) is not itself visible as a /proc entry, we can expose hidden processes.
+     *
+     * Chunqiu Detector item: "异常进程" / "异常进程组"
+     */
+    private fun checkHiddenProcessGroups(): DetectionResult {
+        val suspiciousProcs = mutableListOf<String>()
+        return try {
+            val procDir = File("/proc")
+            val pidDirs = procDir.listFiles { f ->
+                f.isDirectory && f.name.all { c -> c.isDigit() }
+            } ?: emptyArray()
+            val allPids = pidDirs.map { it.name.toInt() }.toSet()
+            pidDirs.forEach { pidDir ->
+                try {
+                    val statusFile = File(pidDir, "status")
+                    if (!statusFile.exists()) return@forEach
+                    val statusText = statusFile.readText()
+                    val name = statusText.lines().firstOrNull { it.startsWith("Name:") }
+                        ?.removePrefix("Name:")?.trim() ?: return@forEach
+                    val tgid = statusText.lines().firstOrNull { it.startsWith("Tgid:") }
+                        ?.removePrefix("Tgid:")?.trim()?.toIntOrNull() ?: return@forEach
+                    val pid = pidDir.name.toInt()
+                    if (tgid != pid && tgid !in allPids) {
+                        suspiciousProcs.add("$name(pid=$pid,tgid=$tgid missing)")
+                    }
+                } catch (_: Exception) {}
+            }
+            if (suspiciousProcs.isNotEmpty()) {
+                DetectionResult(
+                    id = "hidden_process_groups",
+                    name = context.getString(R.string.chk_ext_hidden_proc_name),
+                    category = DetectionCategory.ROOT_MANAGEMENT,
+                    status = DetectionStatus.DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_ext_hidden_proc_desc),
+                    detailedReason = context.getString(R.string.chk_ext_hidden_proc_reason, suspiciousProcs.take(5).joinToString(", ")),
+                    solution = context.getString(R.string.chk_ext_hidden_proc_solution),
+                    technicalDetail = "Hidden groups: ${suspiciousProcs.take(10).joinToString("; ")}"
+                )
+            } else {
+                DetectionResult(
+                    id = "hidden_process_groups",
+                    name = context.getString(R.string.chk_ext_hidden_proc_name_nd),
+                    category = DetectionCategory.ROOT_MANAGEMENT,
+                    status = DetectionStatus.NOT_DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_ext_hidden_proc_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_hidden_proc_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
+                )
+            }
+        } catch (e: Exception) {
+            DetectionResult(
+                id = "hidden_process_groups",
+                name = context.getString(R.string.chk_ext_hidden_proc_name_nd),
+                category = DetectionCategory.ROOT_MANAGEMENT,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_ext_hidden_proc_desc_nd),
+                detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    /**
+     * Check 24: Netlink socket anomaly detection.
+     *
+     * KernelSU communicates with the kernel via Netlink sockets using custom protocol
+     * families. Listing /proc/net/netlink for non-standard protocol numbers (outside
+     * the known Android set) signals kernel-level root activity.
+     *
+     * Chunqiu Detector item: "Netlink socket anomaly"
+     */
+    private fun checkNetlinkSocketAnomaly(): DetectionResult {
+        val standardProtos = setOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
+        val anomalies = mutableListOf<String>()
+        return try {
+            val netlinkFile = File("/proc/net/netlink")
+            if (netlinkFile.exists()) {
+                val lines = netlinkFile.readLines().drop(1)
+                val protoCounts = mutableMapOf<Int, Int>()
+                lines.forEach { line ->
+                    val parts = line.trim().split("\\s+".toRegex())
+                    if (parts.size >= 3) {
+                        val proto = parts[1].toIntOrNull() ?: return@forEach
+                        protoCounts[proto] = (protoCounts[proto] ?: 0) + 1
+                    }
+                }
+                protoCounts.forEach { (proto, count) ->
+                    if (proto !in standardProtos) {
+                        anomalies.add("non-standard netlink proto=$proto (${count} socket(s))")
+                    }
+                }
+                protoCounts.forEach { (proto, count) ->
+                    if (count > 20 && proto in standardProtos) {
+                        anomalies.add("high socket count: proto=$proto count=$count")
+                    }
+                }
+            }
+            if (anomalies.isNotEmpty()) {
+                DetectionResult(
+                    id = "netlink_anomaly",
+                    name = context.getString(R.string.chk_ext_netlink_name),
+                    category = DetectionCategory.SYSTEM_INTEGRITY,
+                    status = DetectionStatus.DETECTED,
+                    riskLevel = RiskLevel.MEDIUM,
+                    description = context.getString(R.string.chk_ext_netlink_desc),
+                    detailedReason = context.getString(R.string.chk_ext_netlink_reason, anomalies.joinToString("; ")),
+                    solution = context.getString(R.string.chk_ext_netlink_solution),
+                    technicalDetail = anomalies.joinToString("; ")
+                )
+            } else {
+                DetectionResult(
+                    id = "netlink_anomaly",
+                    name = context.getString(R.string.chk_ext_netlink_name_nd),
+                    category = DetectionCategory.SYSTEM_INTEGRITY,
+                    status = DetectionStatus.NOT_DETECTED,
+                    riskLevel = RiskLevel.MEDIUM,
+                    description = context.getString(R.string.chk_ext_netlink_desc_nd),
+                    detailedReason = context.getString(R.string.chk_ext_netlink_reason_nd),
+                    solution = context.getString(R.string.no_action_required)
+                )
+            }
+        } catch (e: Exception) {
+            DetectionResult(
+                id = "netlink_anomaly",
+                name = context.getString(R.string.chk_ext_netlink_name_nd),
+                category = DetectionCategory.SYSTEM_INTEGRITY,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.MEDIUM,
+                description = context.getString(R.string.chk_ext_netlink_desc_nd),
                 detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
                 solution = context.getString(R.string.no_action_required)
             )

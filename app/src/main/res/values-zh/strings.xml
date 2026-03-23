@@ -1196,6 +1196,42 @@
     <string name="chk_ext_kernel_dirty_reason_nd">/proc/version 中的内核版本字符串不包含 \'-dirty\' 后缀。内核似乎是干净的官方构建。</string>
     <string name="chk_ext_kernel_dirty_solution">刷入官方内核，或使用 SUSFS 伪装内核版本字符串，使其不再包含 \'-dirty\' 后缀。</string>
 
+    <!-- ExtraRootDetector: Check 21 — dex2oat anomaly -->
+    <string name="chk_ext_dex2oat_name">检测到 dex2oat 异常</string>
+    <string name="chk_ext_dex2oat_name_nd">dex2oat 检测</string>
+    <string name="chk_ext_dex2oat_desc">发现非标准 dex2oat 配置或 LSPosed dex2oat 包装器，表明 Hook 框架处于活动状态。</string>
+    <string name="chk_ext_dex2oat_desc_nd">未检测到 dex2oat 异常。</string>
+    <string name="chk_ext_dex2oat_reason">检测到：%1$s。LSPosed 和一些 Xposed 分支通过在 /data/adb/lspd/dex2oat 放置包装器二进制文件或设置非标准 dalvik.vm.dex2oat-filter 属性来拦截 dex2oat 编译流程。这些更改将 DEX 编译重定向到 Hook 框架，留下可检测的遗留文件。</string>
+    <string name="chk_ext_dex2oat_reason_nd">未发现非标准 dex2oat-filter 属性或 LSPosed 包装器二进制文件。dex2oat 编译流程看起来未被修改。</string>
+    <string name="chk_ext_dex2oat_solution">更新或重新安装 LSPosed。如果问题持续存在，清除 Dalvik 缓存（清空 /data/dalvik-cache）并重启以强制进行干净的 dex2oat 重新编译。</string>
+
+    <!-- ExtraRootDetector: Check 22 — Scene port -->
+    <string name="chk_ext_scene_port_name">检测到 Scene 工具箱</string>
+    <string name="chk_ext_scene_port_name_nd">Scene 工具箱检测</string>
+    <string name="chk_ext_scene_port_desc">Scene 性能工具箱应用已安装或其本地服务器端口处于开放状态。</string>
+    <string name="chk_ext_scene_port_desc_nd">未发现 Scene 工具箱指标。</string>
+    <string name="chk_ext_scene_port_reason">通过以下方式检测到 Scene：%1$s。Scene（com.omarea.vtools）是一款系统级性能和电池管理工具，运行无障碍服务并可选地在已知端口（18080、18081）上运行本地 HTTP 服务器。其存在表明此设备具有高级系统修改能力。</string>
+    <string name="chk_ext_scene_port_reason_nd">未发现 Scene 工具箱软件包（com.omarea.vtools），也未检测到 Scene 已知端口（18080、18081）上的监听套接字。</string>
+    <string name="chk_ext_scene_port_solution">禁用 Scene 的无障碍服务，在 Scene 设置中关闭其本地服务器，或使用 HMA 隐藏 Scene 以防止检测。</string>
+
+    <!-- ExtraRootDetector: Check 23 — hidden process groups -->
+    <string name="chk_ext_hidden_proc_name">检测到隐藏进程组</string>
+    <string name="chk_ext_hidden_proc_name_nd">隐藏进程组检测</string>
+    <string name="chk_ext_hidden_proc_desc">在 /proc 中发现线程组领导者缺失的进程，表明存在刻意的进程隐藏。</string>
+    <string name="chk_ext_hidden_proc_desc_nd">未发现隐藏进程组异常。</string>
+    <string name="chk_ext_hidden_proc_reason">发现线程组领导者（Tgid）在 /proc 中不可见的进程：%1$s。Root 守护进程（LSPosed lspd、Magisk magiskd）有时会从进程表中隐藏其父 PID，同时保留子线程可见。Tgid 不对应任何 /proc 条目是刻意隐藏进程的可靠指标。</string>
+    <string name="chk_ext_hidden_proc_reason_nd">所有可见的 /proc 条目的线程组领导者（Tgid）在 /proc 中也可见。未检测到隐藏进程组。</string>
+    <string name="chk_ext_hidden_proc_solution">在系统设置中开启软件分身（多开）以创建新的进程组，可掩盖此异常。更新可能导致隐藏组的 Root 框架。使用 ZN-AuditPatch 或 SUSFS 进行进程隐藏。</string>
+
+    <!-- ExtraRootDetector: Check 24 — Netlink socket anomaly -->
+    <string name="chk_ext_netlink_name">检测到 Netlink 套接字异常</string>
+    <string name="chk_ext_netlink_name_nd">Netlink 套接字检测</string>
+    <string name="chk_ext_netlink_desc">在 /proc/net/netlink 中发现非标准 Netlink 协议套接字，可能表明存在内核级 Root 活动。</string>
+    <string name="chk_ext_netlink_desc_nd">未发现非标准 Netlink 套接字。</string>
+    <string name="chk_ext_netlink_reason">在 /proc/net/netlink 中发现异常：%1$s。KernelSU 和一些 Magisk 变体使用自定义 Netlink 协议族（超出标准 Android 集合 0–22 的范围）在用户空间和内核模块之间通信。此类套接字的存在是内核级 Root 活动的强烈指标。</string>
+    <string name="chk_ext_netlink_reason_nd">/proc/net/netlink 中的所有 Netlink 套接字均使用标准 Android 协议编号（0–22），套接字数量正常。未检测到异常内核 IPC。</string>
+    <string name="chk_ext_netlink_solution">将 KernelSU 或 Magisk 更新到能够隐藏其 Netlink 通道的版本。目前此检测方法没有可靠的用户空间解决方案。</string>
+
 
     <!-- LunaDetector: Check 1 - LSPosed API Property -->
     <string name="chk_luna_lsp_prop_name">检测到 LSPosed API 属性</string>

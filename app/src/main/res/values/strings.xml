@@ -1205,6 +1205,42 @@
     <string name="chk_ext_kernel_dirty_reason_nd">The kernel version string in /proc/version does not contain the \'-dirty\' suffix. The kernel appears to be a clean, official build.</string>
     <string name="chk_ext_kernel_dirty_solution">Flash an official kernel or use SUSFS to spoof the kernel version string so it no longer contains the \'-dirty\' suffix.</string>
 
+    <!-- ExtraRootDetector: Check 21 — dex2oat anomaly -->
+    <string name="chk_ext_dex2oat_name">dex2oat Anomaly Detected</string>
+    <string name="chk_ext_dex2oat_name_nd">dex2oat Check</string>
+    <string name="chk_ext_dex2oat_desc">A non-standard dex2oat configuration or LSPosed dex2oat wrapper was found, indicating a hook framework is active.</string>
+    <string name="chk_ext_dex2oat_desc_nd">No dex2oat anomalies detected.</string>
+    <string name="chk_ext_dex2oat_reason">Detected: %1$s. LSPosed and some Xposed forks intercept the dex2oat compilation pipeline by placing a wrapper binary at /data/adb/lspd/dex2oat or by setting a non-standard dalvik.vm.dex2oat-filter property. These changes redirect DEX compilation through the hook framework, leaving detectable artefacts.</string>
+    <string name="chk_ext_dex2oat_reason_nd">No non-standard dex2oat-filter property or LSPosed wrapper binary was found. dex2oat pipeline appears unmodified.</string>
+    <string name="chk_ext_dex2oat_solution">Update or reinstall LSPosed. If the issue persists, wipe the Dalvik cache (wipe /data/dalvik-cache) and reboot to force a clean dex2oat recompilation.</string>
+
+    <!-- ExtraRootDetector: Check 22 — Scene port -->
+    <string name="chk_ext_scene_port_name">Scene Toolkit Detected</string>
+    <string name="chk_ext_scene_port_name_nd">Scene Toolkit Check</string>
+    <string name="chk_ext_scene_port_desc">The Scene performance toolkit app is installed or its local server port is open.</string>
+    <string name="chk_ext_scene_port_desc_nd">No Scene toolkit indicators found.</string>
+    <string name="chk_ext_scene_port_reason">Scene detected via: %1$s. Scene (com.omarea.vtools) is a system-level performance and battery management tool that runs an accessibility service and optionally a local HTTP server on well-known ports (18080, 18081). Its presence indicates advanced system modification capability on this device.</string>
+    <string name="chk_ext_scene_port_reason_nd">Scene toolkit packages (com.omarea.vtools) were not found and no listening sockets on Scene\'s known ports (18080, 18081) were detected.</string>
+    <string name="chk_ext_scene_port_solution">Disable Scene\'s accessibility service, close its local server from Scene settings, or hide Scene using HMA to prevent detection.</string>
+
+    <!-- ExtraRootDetector: Check 23 — hidden process groups -->
+    <string name="chk_ext_hidden_proc_name">Hidden Process Groups Detected</string>
+    <string name="chk_ext_hidden_proc_name_nd">Hidden Process Groups Check</string>
+    <string name="chk_ext_hidden_proc_desc">Processes with a missing thread-group leader in /proc were found, indicating deliberate process hiding.</string>
+    <string name="chk_ext_hidden_proc_desc_nd">No hidden process group anomalies found.</string>
+    <string name="chk_ext_hidden_proc_reason">Found processes whose thread-group leader (Tgid) is not visible in /proc: %1$s. Root daemon processes (LSPosed lspd, Magisk magiskd) sometimes hide their parent PID from the process table while leaving child threads visible. A Tgid that does not correspond to any /proc entry is a reliable indicator of a deliberately hidden process.</string>
+    <string name="chk_ext_hidden_proc_reason_nd">All visible /proc entries have thread-group leaders (Tgid) that are also visible in /proc. No hidden process groups detected.</string>
+    <string name="chk_ext_hidden_proc_solution">Enable a software clone (分身) in system settings to create a new process group, which can mask the anomaly. Update root frameworks that may be causing the hidden group. Use ZN-AuditPatch or SUSFS for process hiding.</string>
+
+    <!-- ExtraRootDetector: Check 24 — Netlink socket anomaly -->
+    <string name="chk_ext_netlink_name">Netlink Socket Anomaly Detected</string>
+    <string name="chk_ext_netlink_name_nd">Netlink Socket Check</string>
+    <string name="chk_ext_netlink_desc">Non-standard Netlink protocol sockets were found in /proc/net/netlink, indicating possible kernel-level root activity.</string>
+    <string name="chk_ext_netlink_desc_nd">No non-standard Netlink sockets found.</string>
+    <string name="chk_ext_netlink_reason">Found anomalies in /proc/net/netlink: %1$s. KernelSU and some Magisk variants use custom Netlink protocol families (outside the standard Android set of 0–22) to communicate between userspace and kernel modules. The presence of such sockets is a strong indicator of kernel-level root activity.</string>
+    <string name="chk_ext_netlink_reason_nd">All Netlink sockets in /proc/net/netlink use standard Android protocol numbers (0–22) with normal socket counts. No anomalous kernel IPC detected.</string>
+    <string name="chk_ext_netlink_solution">Update KernelSU or Magisk to a version that hides its Netlink channels. There is currently no reliable user-space workaround for this detection method.</string>
+
 
     <!-- LunaDetector: Check 1 - LSPosed API Property -->
     <string name="chk_luna_lsp_prop_name">LSPosed API Property Detected</string>
