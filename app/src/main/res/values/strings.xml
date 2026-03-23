@@ -778,6 +778,33 @@
     <string name="chk_lspd_process_reason_nd">No process named \'lspd\' was found in /proc.</string>
     <string name="chk_lspd_process_solution">Uninstall LSPosed via its manager app and reboot to stop the daemon.</string>
 
+    <!-- XposedDetector: Check 24 — /data/app scan for LSPosed / HMA -->
+    <string name="chk_data_app_scan_name">Hook/Hide Framework Detected via /data/app Scan</string>
+    <string name="chk_data_app_scan_name_nd">/data/app Package Directory Scan</string>
+    <string name="chk_data_app_scan_desc">An LSPosed, EdXposed, or Hide My Applist install directory was found directly in /data/app, bypassing PackageManager hooks.</string>
+    <string name="chk_data_app_scan_desc_nd">No known hook or hide-framework package directories found in /data/app.</string>
+    <string name="chk_data_app_scan_reason">The Android installer places every app\'s APK under /data/app/~~RANDOM==/PACKAGE-RANDOM==/ (Android 9+) or /data/app/PACKAGE-N/ (Android 7–8). PackageManager hooks (DenyList, Shamiko, HMA) can hide a package from API queries but cannot remove its on-disk install directory. Matching entries found: %1$s.</string>
+    <string name="chk_data_app_scan_reason_nd">No directories matching known LSPosed, EdXposed, or Hide My Applist package names were found under /data/app.</string>
+    <string name="chk_data_app_scan_solution">Uninstall the detected app(s) via their own manager or via adb (pm uninstall &lt;package&gt;) and reboot.</string>
+
+    <!-- XposedDetector: Check 25 — own OAT self-state / LSPosed artefact check -->
+    <string name="chk_own_oat_name">OAT Deoptimisation Artefact Detected</string>
+    <string name="chk_own_oat_name_nd">Own OAT Integrity Check</string>
+    <string name="chk_own_oat_desc">Unexpected files or a corrupted OAT header found in this app\'s compiled-code directory, indicating hook-framework interference.</string>
+    <string name="chk_own_oat_desc_nd">This app\'s OAT directory contains only expected artefacts and the OAT magic is valid.</string>
+    <string name="chk_own_oat_reason">LSPosed and similar hook frameworks deoptimise target-app methods by removing their compiled OAT machine code, forcing the ART interpreter to execute DEX bytecode instead (where hook trampolines fire). This leaves observable artefacts: extra DEX/ODEX files in the OAT directory, a corrupted OAT header magic, or a missing base.odex alongside an existing base.vdex. Anomalies found: %1$s.</string>
+    <string name="chk_own_oat_reason_nd">This app\'s oat/ subdirectory contains only the standard artefacts (base.odex, base.vdex, optionally base.art) and the OAT file starts with the expected magic bytes (6f 61 74 0a), indicating no hook-framework deoptimisation.</string>
+    <string name="chk_own_oat_solution">Disable all LSPosed/Xposed modules that target this app, then reboot so ART recompiles the OAT file cleanly.</string>
+
+    <!-- XposedDetector: Check 26 — LSPlant native library in process maps -->
+    <string name="chk_lsplant_native_name">LSPlant/LSPosed Native Library Mapped</string>
+    <string name="chk_lsplant_native_name_nd">LSPlant Native Library Check</string>
+    <string name="chk_lsplant_native_desc">LSPlant or LSPosed native library (liblsplant.so / liblsposed.so) is mapped into this process.</string>
+    <string name="chk_lsplant_native_desc_nd">No LSPlant or LSPosed native libraries found in the process memory map.</string>
+    <string name="chk_lsplant_native_reason">LSPlant is the ART hooking engine that powers LSPosed. When LSPosed hooks a method in this app, it loads liblsplant.so into the process. This library appears as a named mapping in /proc/self/maps and cannot be hidden by Java-level hooks. Found: %1$s.</string>
+    <string name="chk_lsplant_native_reason_nd">No LSPlant or LSPosed native libraries (liblsplant.so, liblsposed.so, libxposed-native.so, liblspd.so, etc.) were found in /proc/self/maps.</string>
+    <string name="chk_lsplant_native_solution">Disable all LSPosed modules that target this app and reboot. If LSPosed must remain active, remove this app from every module\'s scope list.</string>
+
 
     <!-- AdvancedRootDetector strings -->
     <string name="chk_adv_su_path_name">Su Binary Found</string>
@@ -1615,5 +1642,61 @@
     <string name="err_detail_failed_read">Failed to read %1$s: %2$s</string>
     <string name="err_detail_error">Error: %1$s</string>
     <string name="err_detail_query_failed">%1$s query failed: %2$s</string>
+
+    <!-- AdvancedRootDetector: Check 20 – Root manager launch probe -->
+    <string name="chk_adv_intent_probe_name">Hidden Root Manager Detected (Launch Probe)</string>
+    <string name="chk_adv_intent_probe_name_hidden">Root Manager with App Hiding Detected</string>
+    <string name="chk_adv_intent_probe_name_nd">Root Manager Launch Probe</string>
+    <string name="chk_adv_intent_probe_desc">A root manager package that is invisible to normal package queries was detected by successfully launching it via a system intent.</string>
+    <string name="chk_adv_intent_probe_desc_hidden">A root manager appears to be installed and actively hiding itself from package queries (app-hiding / DenyList is in use). The system jump to the root manager app confirmed its presence.</string>
+    <string name="chk_adv_intent_probe_desc_nd">No hidden root managers detected via system launch probe.</string>
+    <string name="chk_adv_intent_probe_reason">Root manager detected via system launch probe: %1$s. An ACTION_MAIN + CATEGORY_LAUNCHER intent targeting the package was fired without specifying a particular activity class. If the system accepts the launch (no ActivityNotFoundException), the package is confirmed to be installed — even if conventional PackageManager queries (getPackageInfo, etc.) return NameNotFoundException. A successful launch that bypasses the PackageManager API is a strong indicator of app-hiding (Magisk DenyList / Shamiko / LSPosed hide).</string>
+    <string name="chk_adv_intent_probe_reason_nd">System launch probes against all known root manager packages (Magisk, KernelSU, APatch, SuperSU, etc.) all threw ActivityNotFoundException, confirming no root manager is installed (even in a hidden state).</string>
+    <string name="chk_adv_intent_probe_solution">Disable app-hiding (Magisk DenyList / Shamiko / LSPosed hide) or uninstall the root manager. Then reboot and re-run AnyCheck. If the root manager is still required, remove it from the DenyList for this application.</string>
+
+    <!-- RevenyInspiredDetector: Check 5b – HMA Binder probe -->
+    <string name="chk_reveny_hma_binder_name">Hide My Applist Active (Binder Probe)</string>
+    <string name="chk_reveny_hma_binder_name_nd">Hide My Applist Binder Probe</string>
+    <string name="chk_reveny_hma_binder_desc">Hide My Applist service detected via its hidden Binder interface injected into PackageManagerService.</string>
+    <string name="chk_reveny_hma_binder_desc_nd">No Hide My Applist service detected via PackageManager Binder probe.</string>
+    <string name="chk_reveny_hma_binder_reason">HMA injects a hidden Binder service into the system PackageManager (android.content.pm.IPackageManager) using a custom transaction code (0x484D4144 — H-M-A-D). Sending this transaction with ACTION_GET_BINDER=1 returned a valid IHMAService Binder, confirming the HMA service is running inside system_server and actively filtering package queries for this app.</string>
+    <string name="chk_reveny_hma_binder_reason_nd">The HMAD transaction probe (0x484D4144) sent to the PackageManager Binder returned no Binder object, indicating HMA service is not active.</string>
+    <string name="chk_reveny_hma_binder_solution">Disable Hide My Applist in LSPosed module manager or uninstall the HMA app, then reboot. If HMA must remain active, remove this application from its hide list.</string>
+
+    <!-- RevenyInspiredDetector: Check 5c – HMA active filter-behaviour detection -->
+    <string name="chk_reveny_hma_filter_name">Hide My Applist Actively Filtering Packages</string>
+    <string name="chk_reveny_hma_filter_name_nd">Hide My Applist Filter Behaviour Check</string>
+    <string name="chk_reveny_hma_filter_desc">PackageManager query anomalies detected that indicate Hide My Applist is actively hiding packages from this app.</string>
+    <string name="chk_reveny_hma_filter_desc_nd">No PackageManager filter anomalies detected; HMA does not appear to be targeting this app.</string>
+    <string name="chk_reveny_hma_filter_reason">HMA hooks PackageManagerService\'s shouldFilterApplication() / filterAppAccessLPr() to silently remove packages from query results. The following anomalies were detected: %1$s. These patterns are consistent with HMA being configured to hide packages from this app.</string>
+    <string name="chk_reveny_hma_filter_reason_nd">All PackageManager sanity checks passed: always-visible system packages (android, permissioncontroller, settings) are present; self-visibility via getApplicationInfo and getPackageInfo is consistent; installed package count matches installed application count within tolerance.</string>
+    <string name="chk_reveny_hma_filter_solution">In the Hide My Applist app, remove this application from the scope list, or disable the HMA Xposed module entirely and reboot.</string>
+
+    <!-- RevenyInspiredDetector: Check 5d – HMA /data/app directory scan -->
+    <string name="chk_reveny_hma_data_app_name">Hide My Applist Install Directory Found</string>
+    <string name="chk_reveny_hma_data_app_name_nd">Hide My Applist /data/app Scan</string>
+    <string name="chk_reveny_hma_data_app_desc">A Hide My Applist APK install directory was found directly in /data/app, bypassing all PackageManager hooks.</string>
+    <string name="chk_reveny_hma_data_app_desc_nd">No Hide My Applist APK install directories found under /data/app.</string>
+    <string name="chk_reveny_hma_data_app_reason">The Android installer always creates a physical directory for every installed app under /data/app/~~RANDOM==/PACKAGE-RANDOM==/ (Android 9+) or /data/app/PACKAGE-N/ (Android 7–8). HMA\'s PackageManager hook can hide the package from API queries, but it cannot delete this directory. The following matching entries were found: %1$s. Their presence confirms HMA is physically installed on this device.</string>
+    <string name="chk_reveny_hma_data_app_reason_nd">No directories matching Hide My Applist package names (com.tsng.hidemyapplist, cn.hidemyapplist) were found under /data/app.</string>
+    <string name="chk_reveny_hma_data_app_solution">Uninstall Hide My Applist via its own UI or via adb (pm uninstall com.tsng.hidemyapplist) and reboot.</string>
+
+    <!-- RuruInspiredDetector: Check 6b – HMA current data directory -->
+    <string name="chk_ruru_hma_dir_name">Hide My Applist Data Directory Detected</string>
+    <string name="chk_ruru_hma_dir_name_nd">Hide My Applist Data Directory Check</string>
+    <string name="chk_ruru_hma_dir_desc">A Hide My Applist (v3+) data directory was found under /data/misc/.</string>
+    <string name="chk_ruru_hma_dir_desc_nd">No Hide My Applist data directories found under /data/misc/.</string>
+    <string name="chk_ruru_hma_dir_reason">HMA v3+ stores its configuration, logs, and filter count in a randomly-named directory at /data/misc/hide_my_applist_{16-char-random}. The following matching entries were found: %1$s. This confirms HMA has been or is currently installed and configured on this device.</string>
+    <string name="chk_ruru_hma_dir_reason_nd">No directories matching the pattern /data/misc/hide_my_applist_* were found, indicating HMA v3+ has not been installed.</string>
+    <string name="chk_ruru_hma_dir_solution">Uninstall Hide My Applist and reboot. If HMA must remain installed, remove this application from its filter list to prevent app-list hiding.</string>
+
+    <!-- XposedDetector: Check 27 — JNI native LSPosed detection -->
+    <string name="chk_native_lsposed_name">LSPosed Detected (Native)</string>
+    <string name="chk_native_lsposed_name_nd">Native LSPosed Detection</string>
+    <string name="chk_native_lsposed_desc">LSPosed / LSPlant detected via native C++ probes that bypass Java-level hooks.</string>
+    <string name="chk_native_lsposed_desc_nd">No LSPosed / LSPlant indicators found by native C++ probes.</string>
+    <string name="chk_native_lsposed_reason">Native probes found: %1$s. Checks: raw /proc/self/maps syscall scan, dlopen(RTLD_NOLOAD), dlsym XposedBridge symbols, stat() path check, ro.dalvik.vm.native.bridge property, smaps Private_Dirty.</string>
+    <string name="chk_native_lsposed_reason_nd">All native probes passed: no LSPosed libs in maps, no dlopen match, no exported XposedBridge symbols, no /data/misc/lspd found via stat(), native bridge property unset, no suspicious smaps dirty pages.</string>
+    <string name="chk_native_lsposed_solution">Disable all LSPosed modules targeting this app and reboot.</string>
 
 </resources>

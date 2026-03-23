@@ -35,7 +35,11 @@ class XposedDetector(private val context: Context) {
         checkLSPosedFullStackTrace(),
         checkSMAPSInlineHooks(),
         checkZygiskModuleInjectionInMaps(),
-        checkLspdProcess()
+        checkLspdProcess(),
+        checkDataAppScanLSPosed(),
+        checkOwnOatLSPosedArtifacts(),
+        checkLSPlantNativeLib(),
+        checkNativeLSPosedDetection()
     )
 
     /** Check 1: Xposed / LSPosed / EdXposed manager package names */
@@ -1286,7 +1290,330 @@ class XposedDetector(private val context: Context) {
         }
     }
 
+    /**
+     * Check 24: /data/app directory scan for LSPosed / EdXposed / HMA.
+     *
+     * DenyList / Shamiko / HMA can all hide packages from PackageManager
+     * queries, but none of them can remove the APK installation directories
+     * created by the Android installer in /data/app.  Scanning those
+     * directories gives us ground-truth evidence of package installation that
+     * bypasses all PM-level hooks.
+     *
+     * Android 9+ layout:  /data/app/~~RANDOM==/PACKAGE-RANDOM==/base.apk
+     * Android 7–8 layout: /data/app/PACKAGE-N/base.apk
+     */
+    private fun checkDataAppScanLSPosed(): DetectionResult {
+        val targets = arrayOf(
+            "org.lsposed.manager",
+            "io.github.lsposed.manager",
+            "com.lsposed.manager",
+            "org.meowcat.edxposed.manager",
+            "com.solohsu.android.edxp.manager",
+            "de.robv.android.xposed.installer",
+            // HMA is also included here so a single /data/app pass covers both
+            "com.tsng.hidemyapplist",
+            "com.tsng.hidemyapplist.debug",
+            "cn.hidemyapplist"
+        )
+        val found = scanDataAppForPackages(*targets)
+        return if (found.isNotEmpty()) {
+            DetectionResult(
+                id = "data_app_scan_lsposed",
+                name = context.getString(R.string.chk_data_app_scan_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_data_app_scan_desc),
+                detailedReason = context.getString(
+                    R.string.chk_data_app_scan_reason,
+                    found.joinToString("; ")
+                ),
+                solution = context.getString(R.string.chk_data_app_scan_solution),
+                technicalDetail = found.joinToString("\n")
+            )
+        } else {
+            DetectionResult(
+                id = "data_app_scan_lsposed",
+                name = context.getString(R.string.chk_data_app_scan_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_data_app_scan_desc_nd),
+                detailedReason = context.getString(R.string.chk_data_app_scan_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
+            )
+        }
+    }
+
+    /**
+     * Check 25: OAT self-state — detect LSPosed artefacts in AnyCheck's own
+     * install directory.
+     *
+     * When LSPosed hooks methods in a target app it needs to deoptimise them
+     * (remove their compiled machine code so the DEX interpreter runs instead,
+     * allowing hook trampolines to fire).  To do this it writes an in-process
+     * profile hint and may drop extra DEX / ODEX / VDEX files into the target
+     * app's OAT directory.  On a clean device only `base.odex` + `base.vdex`
+     * (and optionally `base.art`) exist there.  Any unexpected extra file is a
+     * strong indicator of hook-framework interference.
+     *
+     * We also check whether our own OAT file starts with the standard ART
+     * magic bytes ("oat\n").  A modified header (e.g. zeroed or patched magic)
+     * is another indicator.
+     *
+     * The derivation path is:
+     *   applicationInfo.sourceDir
+     *     → e.g. /data/app/~~ABC==/com.anycheck.app-XYZ==/base.apk
+     *   oatDir = installDir/oat/<abi>/
+     */
+    private fun checkOwnOatLSPosedArtifacts(): DetectionResult {
+        val indicators = mutableListOf<String>()
+        try {
+            val sourceDir = context.applicationInfo.sourceDir
+            val installDir = File(sourceDir).parentFile
+                ?: return notDetectedOat()
+
+            // Try each ABI subdirectory that might exist
+            val abis = listOf("arm64", "arm", "x86_64", "x86")
+            for (abi in abis) {
+                val oatDir = File(installDir, "oat/$abi")
+                if (!oatDir.isDirectory) continue
+
+                val files = oatDir.listFiles() ?: continue
+                val fileNames = files.map { it.name }.toSet()
+
+                // Known-good artefacts produced by dex2oat
+                val expected = setOf("base.odex", "base.vdex", "base.art")
+                val unexpected = files.filter { it.name !in expected }
+                if (unexpected.isNotEmpty()) {
+                    indicators.add(
+                        "Unexpected files in oat/$abi: ${unexpected.joinToString { it.name }}"
+                    )
+                }
+
+                val odexFile = File(oatDir, "base.odex")
+                if (odexFile.exists() && odexFile.length() >= 4) {
+                    try {
+                        odexFile.inputStream().use { stream ->
+                            val header = ByteArray(4)
+                            stream.read(header)
+                            // Standard ART OAT magic: 'o' 'a' 't' '\n' (0x6f 0x61 0x74 0x0a)
+                            val valid = header[0] == 0x6f.toByte() &&
+                                header[1] == 0x61.toByte() &&
+                                header[2] == 0x74.toByte() &&
+                                header[3] == 0x0a.toByte()
+                            if (!valid) {
+                                indicators.add(
+                                    "Unexpected OAT magic in oat/$abi/base.odex: " +
+                                        header.joinToString("") { "%02x".format(it) }
+                                )
+                            }
+                        }
+                    } catch (_: Exception) {}
+
+                    // Scan ODEX binary for LSPosed/LSPlant string markers.
+                    // When LSPosed is active its framework strings may be baked
+                    // into the compiled OAT code or embedded in the DEX string pool
+                    // that is embedded in the ODEX.  This mirrors the technique
+                    // used by reveny/Android-Native-Root-Detector to detect LSPosed
+                    // by inspecting its own compiled artefact.
+                    try {
+                        val lsposedMarkers = listOf(
+                            "lsposed", "lsplant", "liblsplant", "lspd",
+                            "edxposed", "xposedbridge", "XposedBridge",
+                            "de.robv.android.xposed"
+                        )
+                        val odexBytes = odexFile.readBytes()
+                        val odexText = String(odexBytes, Charsets.ISO_8859_1)
+                        for (marker in lsposedMarkers) {
+                            if (odexText.contains(marker, ignoreCase = true)) {
+                                indicators.add(
+                                    "LSPosed marker \"$marker\" found in oat/$abi/base.odex"
+                                )
+                                break // one marker is sufficient evidence
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                // A missing odex but present vdex alone can indicate forced
+                // interpreter mode (which LSPosed uses on some Android versions)
+                if ("base.vdex" in fileNames && "base.odex" !in fileNames) {
+                    indicators.add(
+                        "oat/$abi has base.vdex but no base.odex — " +
+                            "possible forced-interpreter deoptimisation"
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+
+        return if (indicators.isNotEmpty()) {
+            DetectionResult(
+                id = "own_oat_artifacts",
+                name = context.getString(R.string.chk_own_oat_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_own_oat_desc),
+                detailedReason = context.getString(
+                    R.string.chk_own_oat_reason,
+                    indicators.joinToString("; ")
+                ),
+                solution = context.getString(R.string.chk_own_oat_solution),
+                technicalDetail = indicators.joinToString("\n")
+            )
+        } else {
+            notDetectedOat()
+        }
+    }
+
+    private fun notDetectedOat() = DetectionResult(
+        id = "own_oat_artifacts",
+        name = context.getString(R.string.chk_own_oat_name_nd),
+        category = DetectionCategory.XPOSED,
+        status = DetectionStatus.NOT_DETECTED,
+        riskLevel = RiskLevel.HIGH,
+        description = context.getString(R.string.chk_own_oat_desc_nd),
+        detailedReason = context.getString(R.string.chk_own_oat_reason_nd),
+        solution = context.getString(R.string.chk_no_action_needed)
+    )
+
+    /**
+     * Check 26: LSPlant native library in process memory map.
+     *
+     * LSPlant is the ART hooking engine that powers LSPosed.  When LSPosed is
+     * active and has hooked at least one method in this app, it loads its
+     * native library (liblsplant.so) and potentially other support libs
+     * (liblsposed.so, libxposed-native.so, liblspd.so) into the process.
+     * These appear as named mappings in /proc/self/maps even when the DEX-level
+     * checks are bypassed.
+     *
+     * Note: if no module targets this app, LSPlant may not be mapped here —
+     * this check is complementary to the other LSPosed checks.
+     */
+    private fun checkLSPlantNativeLib(): DetectionResult {
+        val lsplantLibs = listOf(
+            "liblsplant.so",
+            "liblsposed.so",
+            "libxposed-native.so",
+            "liblspd.so",
+            "liblspatch.so",
+            "libfake-linker.so"   // used by LSPosed's zygisk variant
+        )
+        val found = mutableListOf<String>()
+        try {
+            File("/proc/self/maps").forEachLine { line ->
+                val path = line.trim().split("\\s+".toRegex()).lastOrNull()
+                    ?.takeIf { it.startsWith("/") } ?: return@forEachLine
+                val filename = path.substringAfterLast("/")
+                val match = lsplantLibs.firstOrNull { filename.equals(it, ignoreCase = true) }
+                if (match != null) {
+                    val entry = path.take(120)
+                    if (!found.contains(entry)) found.add(entry)
+                }
+            }
+        } catch (_: Exception) {}
+
+        return if (found.isNotEmpty()) {
+            DetectionResult(
+                id = "lsplant_native_lib",
+                name = context.getString(R.string.chk_lsplant_native_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_lsplant_native_desc),
+                detailedReason = context.getString(
+                    R.string.chk_lsplant_native_reason,
+                    found.joinToString("; ")
+                ),
+                solution = context.getString(R.string.chk_lsplant_native_solution),
+                technicalDetail = "Mapped libs: ${found.joinToString("; ")}"
+            )
+        } else {
+            DetectionResult(
+                id = "lsplant_native_lib",
+                name = context.getString(R.string.chk_lsplant_native_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_lsplant_native_desc_nd),
+                detailedReason = context.getString(R.string.chk_lsplant_native_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
+            )
+        }
+    }
+
+    /** Check 27: Native C++ LSPosed detection (bypasses LSPlant Java hooks) */
+    private fun checkNativeLSPosedDetection(): DetectionResult {
+        val findings = NativeDetector.detectLSPosed()
+        return if (findings.isNotEmpty()) {
+            DetectionResult(
+                id = "native_lsposed_detect",
+                name = context.getString(R.string.chk_native_lsposed_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_native_lsposed_desc),
+                detailedReason = context.getString(R.string.chk_native_lsposed_reason, findings),
+                solution = context.getString(R.string.chk_native_lsposed_solution),
+                technicalDetail = findings
+            )
+        } else {
+            DetectionResult(
+                id = "native_lsposed_detect",
+                name = context.getString(R.string.chk_native_lsposed_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_native_lsposed_desc_nd),
+                detailedReason = context.getString(R.string.chk_native_lsposed_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
+            )
+        }
+    }
+
     // ---- Utilities ----
+
+    /**
+     * Scans /data/app for installed package directories whose names match any
+     * of the supplied package name prefixes.  This reads the filesystem
+     * directly, bypassing PackageManager hooks (HMA, DenyList, Shamiko).
+     *
+     * Android 9+ layout:  /data/app/~~RANDOM==/PACKAGE-RANDOM==/
+     * Android 7–8 layout: /data/app/PACKAGE-N/
+     */
+    private fun scanDataAppForPackages(vararg packages: String): List<String> {
+        val found = mutableListOf<String>()
+        try {
+            val dataApp = File("/data/app")
+            val outerEntries = dataApp.listFiles() ?: return found
+            for (outer in outerEntries) {
+                if (!outer.isDirectory) continue
+                val outerName = outer.name
+                // Android 7–8 flat layout
+                for (pkg in packages) {
+                    if (outerName == pkg || outerName.startsWith("$pkg-")) {
+                        found.add(outer.path)
+                    }
+                }
+                // Android 9+ double-encoded layout: outer dir is ~~RANDOM==
+                if (outerName.startsWith("~~")) {
+                    try {
+                        val innerEntries = outer.listFiles() ?: continue
+                        for (inner in innerEntries) {
+                            if (!inner.isDirectory) continue
+                            for (pkg in packages) {
+                                if (inner.name == pkg || inner.name.startsWith("$pkg-")) {
+                                    found.add(inner.path)
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+        } catch (_: Exception) {}
+        return found
+    }
 
     private fun getSystemProperty(key: String): String {
         return try {

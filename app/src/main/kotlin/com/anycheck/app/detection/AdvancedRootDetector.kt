@@ -1,6 +1,8 @@
 package com.anycheck.app.detection
 
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
@@ -34,7 +36,8 @@ class AdvancedRootDetector(private val context: Context) {
         checkMagiskModuleCount(),
         checkDebuggerAttached(),
         checkRootCloakingApps(),
-        checkKernelModules()
+        checkKernelModules(),
+        checkRootManagerIntentProbe()
     )
 
     /** Check 1: Execute `which su` to discover su in PATH */
@@ -964,6 +967,116 @@ class AdvancedRootDetector(private val context: Context) {
                 description = context.getString(R.string.chk_adv_kern_mods_desc_error),
                 detailedReason = context.getString(R.string.err_detail_failed, e.message ?: ""),
                 solution = context.getString(R.string.chk_adv_kern_mods_solution_error)
+            )
+        }
+    }
+
+    /**
+     * Check 20: Root manager launch probe — detects root managers hidden via app-hiding.
+     *
+     * Conventional package queries can be suppressed by root app-hiding tools such as
+     * Magisk's DenyList / Shamiko / LSPosed modules.  However, attempting to launch a
+     * package via the system's activity-resolution path (AMS → PMS) using an implicit
+     * ACTION_MAIN + CATEGORY_LAUNCHER intent with only the package name set bypasses the
+     * PackageManager API layer that hiding tools hook.
+     *
+     * Detection logic:
+     *   – startActivity() does NOT throw ActivityNotFoundException → package is present
+     *     (the system accepted the launch, triggering the actual app-switch / system jump).
+     *   – ActivityNotFoundException is thrown immediately → package is genuinely not installed.
+     *
+     * If conventional package scanning missed the package but this probe launches it, app-hiding
+     * (Magisk DenyList / Shamiko / LSPosed hide) is almost certainly in use.
+     */
+    private fun checkRootManagerIntentProbe(): DetectionResult {
+        val targets = listOf(
+            "com.topjohnwu.magisk"        to "Magisk",
+            "io.github.huskydg.magisk"    to "Magisk Delta",
+            "io.github.vvb2060.magisk"    to "Magisk Alpha",
+            "me.weishu.kernelsu"          to "KernelSU",
+            "com.rifsxd.ksunext"          to "KernelSU Next",
+            "me.bmax.apatch"              to "APatch",
+            "eu.chainfire.supersu"        to "SuperSU",
+            "com.noshufou.android.su"     to "Superuser"
+        )
+
+        val indicators    = mutableListOf<String>()
+        val hiddenMarkers = mutableListOf<String>()
+
+        targets.forEach { (pkg, displayName) ->
+            val alreadyVisible = packageExists(pkg)
+
+            // Build a launcher intent that targets the package's main activity without
+            // specifying a particular Activity class.  Using ACTION_MAIN + CATEGORY_LAUNCHER
+            // + setPackage() lets AMS resolve the real entry-point, which can surface packages
+            // hidden from direct PackageManager API calls (e.g. Magisk DenyList / Shamiko).
+            val launchIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                setPackage(pkg)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            var launched = false
+            try {
+                context.startActivity(launchIntent)
+                launched = true
+            } catch (_: ActivityNotFoundException) {
+                // Package is genuinely not installed — expected for clean devices.
+            } catch (_: SecurityException) {
+                // Package exists but is protected; treat as present.
+                launched = true
+            } catch (_: Exception) {}
+
+            when {
+                launched && !alreadyVisible -> {
+                    // System launched the app even though it was invisible to normal PM queries.
+                    // This is a strong indicator that app-hiding is in use.
+                    hiddenMarkers.add(
+                        "$displayName ($pkg): launched successfully via system intent despite " +
+                        "being hidden from PackageManager — app-hiding (Magisk DenyList / Shamiko) " +
+                        "is in use"
+                    )
+                }
+                launched && alreadyVisible -> {
+                    // Already detected through regular PM queries; the launch confirms it.
+                    indicators.add("$displayName ($pkg): confirmed via direct system launch")
+                }
+            }
+        }
+
+        val allIndicators = indicators + hiddenMarkers
+        return if (allIndicators.isNotEmpty()) {
+            val appHidingLikely = indicators.isEmpty() && hiddenMarkers.isNotEmpty()
+            DetectionResult(
+                id = "root_intent_probe",
+                name = if (appHidingLikely)
+                    context.getString(R.string.chk_adv_intent_probe_name_hidden)
+                else
+                    context.getString(R.string.chk_adv_intent_probe_name),
+                category = DetectionCategory.ROOT_MANAGEMENT,
+                status = DetectionStatus.DETECTED,
+                riskLevel = if (appHidingLikely) RiskLevel.HIGH else RiskLevel.CRITICAL,
+                description = if (appHidingLikely)
+                    context.getString(R.string.chk_adv_intent_probe_desc_hidden)
+                else
+                    context.getString(R.string.chk_adv_intent_probe_desc),
+                detailedReason = context.getString(
+                    R.string.chk_adv_intent_probe_reason,
+                    allIndicators.joinToString("; ")
+                ),
+                solution = context.getString(R.string.chk_adv_intent_probe_solution),
+                technicalDetail = allIndicators.joinToString("\n")
+            )
+        } else {
+            DetectionResult(
+                id = "root_intent_probe",
+                name = context.getString(R.string.chk_adv_intent_probe_name_nd),
+                category = DetectionCategory.ROOT_MANAGEMENT,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_adv_intent_probe_desc_nd),
+                detailedReason = context.getString(R.string.chk_adv_intent_probe_reason_nd),
+                solution = context.getString(R.string.no_action_required)
             )
         }
     }

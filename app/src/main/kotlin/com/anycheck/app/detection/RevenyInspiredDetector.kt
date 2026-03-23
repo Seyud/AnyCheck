@@ -1,8 +1,10 @@
 package com.anycheck.app.detection
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Parcel
 import com.anycheck.app.R
 import java.io.BufferedReader
 import java.io.File
@@ -23,6 +25,9 @@ class RevenyInspiredDetector(private val context: Context) {
         checkResetprop(),
         checkDebugFingerprint(),
         checkHideMyApplist(),
+        checkHmaBinderProbe(),
+        checkHmaFilterBehavior(),
+        checkHmaDataAppScan(),
         checkMountInconsistency(),
         checkAddonDOrInstallRecovery(),
         checkSystemAppsAbsence(),
@@ -250,22 +255,16 @@ class RevenyInspiredDetector(private val context: Context) {
         )
         val foundPackages = hmaPackages.filter { packageExists(it) }
 
-        // Also check for service socket that HMA creates
-        val socketPath = "/dev/unix/hidemyapplist"
-        val hasSocket = File(socketPath).exists()
-
-        // Check proc/net/unix for HMA socket name
+        // Check proc/net/unix for the exact HMA socket name (full keyword, not partial "hma")
         val hasUnixSocket = runCatching {
             File("/proc/net/unix").readLines().any { line ->
-                line.contains("hidemyapplist", ignoreCase = true) ||
-                    line.contains("hma", ignoreCase = true)
+                line.contains("hidemyapplist", ignoreCase = true)
             }
         }.getOrNull() ?: false
 
         val indicators = mutableListOf<String>()
         if (foundPackages.isNotEmpty()) indicators.add("Packages: ${foundPackages.joinToString(", ")}")
-        if (hasSocket) indicators.add("Socket: $socketPath")
-        if (hasUnixSocket) indicators.add("Unix socket in /proc/net/unix")
+        if (hasUnixSocket) indicators.add("Unix socket matching 'hidemyapplist' in /proc/net/unix")
 
         return if (indicators.isNotEmpty()) {
             DetectionResult(
@@ -629,8 +628,340 @@ class RevenyInspiredDetector(private val context: Context) {
     }
 
     // -------------------------------------------------------------------------
+    // Check 5b: Hide My Applist — Binder probe
+    //
+    // HMA injects a hidden Binder service into the PackageManager Binder
+    // (`android.content.pm.IPackageManager` interface).  To let its own app
+    // connect to the service running inside system_server it intercepts a
+    // specific custom transaction:
+    //
+    //   transaction code = 'H' << 24 | 'M' << 16 | 'A' << 8 | 'D'  = 0x484D4144
+    //   ACTION_GET_BINDER = 1  (written as an int to the Parcel)
+    //
+    // On a clean device PMS does not handle this transaction and the reply
+    // Parcel will contain no Binder.  If HMA is active, the reply Parcel
+    // contains a valid IHMAService Binder → HMA service confirmed.
+    //
+    // We obtain the PM IBinder via three fallback methods to avoid relying on
+    // the blocked `ServiceManager.getService()` hidden API.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the raw IBinder for the PackageManager service using three
+     * progressively less-preferred approaches, any of which may be blocked on
+     * stricter Android builds.
+     */
+    @SuppressLint("DiscouragedPrivateApi")
+    private fun getPackageManagerBinder(): android.os.IBinder? {
+        // Method 1: Walk up the PackageManager class hierarchy looking for the
+        // IPackageManager 'mPM' field.  'ApplicationPackageManager' has held
+        // this field since Android 4 and it is still present in AOSP 14.
+        try {
+            val pm = context.packageManager
+            var clazz: Class<*>? = pm.javaClass
+            while (clazz != null) {
+                try {
+                    val field = clazz.getDeclaredField("mPM")
+                    field.isAccessible = true
+                    val ipm = field.get(pm)
+                    if (ipm is android.os.IInterface) {
+                        val binder = ipm.asBinder()
+                        if (binder != null) return binder
+                    }
+                } catch (_: NoSuchFieldException) {}
+                clazz = clazz.superclass
+            }
+        } catch (_: Exception) {}
+
+        // Method 2: ActivityThread.currentActivityThread().getPackageManager()
+        try {
+            val atClass = Class.forName("android.app.ActivityThread")
+            val currentThread = atClass.getMethod("currentActivityThread").invoke(null)
+            val getPackageManager = atClass.getDeclaredMethod("getPackageManager")
+                .also { it.isAccessible = true }
+            val ipm = getPackageManager.invoke(currentThread)
+            if (ipm is android.os.IInterface) {
+                val binder = ipm.asBinder()
+                if (binder != null) return binder
+            }
+        } catch (_: Exception) {}
+
+        // Method 3: ServiceManager.getService("package") — last resort; may be
+        // blocked on API 28+ by the hidden API enforcement policy.
+        try {
+            val smClass = Class.forName("android.os.ServiceManager")
+            val binder = smClass.getMethod("getService", String::class.java)
+                .invoke(null, "package") as? android.os.IBinder
+            if (binder != null) return binder
+        } catch (_: Exception) {}
+
+        return null
+    }
+
+    @SuppressLint("DiscouragedPrivateApi")
+    private fun checkHmaBinderProbe(): DetectionResult {
+        val pmBinder = getPackageManagerBinder()
+        if (pmBinder == null) {
+            return DetectionResult(
+                id = "reveny_hma_binder_probe",
+                name = context.getString(R.string.chk_reveny_hma_binder_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_reveny_hma_binder_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_hma_binder_reason_nd),
+                solution = context.getString(R.string.no_action_required),
+                technicalDetail = "Unable to acquire PackageManager IBinder via any fallback method"
+            )
+        }
+
+        val detected = runCatching {
+            // HMAD transaction: 'H'<<24 | 'M'<<16 | 'A'<<8 | 'D' = 0x484D4144
+            val transaction = 'H'.code shl 24 or ('M'.code shl 16) or ('A'.code shl 8) or 'D'.code
+            val data = Parcel.obtain()
+            val reply = Parcel.obtain()
+            try {
+                // IPackageManager descriptor + ACTION_GET_BINDER (=1)
+                data.writeInterfaceToken("android.content.pm.IPackageManager")
+                data.writeInt(1)
+                pmBinder.transact(transaction, data, reply, 0)
+                reply.readException()
+                reply.readStrongBinder() != null
+            } finally {
+                data.recycle()
+                reply.recycle()
+            }
+        }.getOrElse { false }
+
+        return if (detected) {
+            DetectionResult(
+                id = "reveny_hma_binder_probe",
+                name = context.getString(R.string.chk_reveny_hma_binder_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_reveny_hma_binder_desc),
+                detailedReason = context.getString(R.string.chk_reveny_hma_binder_reason),
+                solution = context.getString(R.string.chk_reveny_hma_binder_solution),
+                technicalDetail = "IHMAService Binder returned from HMAD transaction (0x484D4144) on package service"
+            )
+        } else {
+            DetectionResult(
+                id = "reveny_hma_binder_probe",
+                name = context.getString(R.string.chk_reveny_hma_binder_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_reveny_hma_binder_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_hma_binder_reason_nd),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Check 5c: HMA active filter-behaviour detection
+    //
+    // When HMA adds our app to its scope (i.e. it is actively hiding packages
+    // from us), two observable anomalies arise:
+    //
+    //  1. Package count anomaly — the raw Binder call to
+    //     IPackageManager.getInstalledPackages() with the MATCH_UNINSTALLED_PACKAGES
+    //     flag (0x00002000) returns more entries than the same call made through the
+    //     normal Java PackageManager API, because HMA's hook fires for the Java-API
+    //     path in our process but the raw Binder bypasses the Java-level wrapper.
+    //     NOTE: On modern Android the raw Binder call is ALSO intercepted by HMA
+    //     (because HMA hooks system_server, not the client stub). This check
+    //     therefore focuses on a different gap:
+    //
+    //  2. Self-visibility gap — AnyCheck's own package should ALWAYS be visible via
+    //     PackageManager (HMA never hides caller == query). If
+    //     `getApplicationInfo(ownPackage)` fails, something unusual is happening.
+    //     More importantly: `getInstalledPackages()` on a stock device returns a
+    //     count proportional to how many apps are installed. We compare the count
+    //     against the number of "always-visible" packages from HMA's own
+    //     `packagesShouldNotHide` list. If FEWER than all of those always-visible
+    //     packages appear in the installed list, HMA is filtering aggressively.
+    // -------------------------------------------------------------------------
+    @SuppressLint("QueryPermissionsNeeded")
+    private fun checkHmaFilterBehavior(): DetectionResult {
+        // These packages are hard-coded in HMA's Constants.packagesShouldNotHide
+        // and are NEVER filtered regardless of configuration.  They must always
+        // appear in getInstalledPackages() on any real Android device.
+        val alwaysVisiblePackages = listOf(
+            "android",
+            "com.android.permissioncontroller",
+            "com.android.providers.settings"
+        )
+
+        val pm = context.packageManager
+        val installedNames = runCatching {
+            pm.getInstalledPackages(0).map { it.packageName }.toSet()
+        }.getOrElse { emptySet() }
+
+        // Count how many always-visible packages actually appeared
+        val missingAlwaysVisible = alwaysVisiblePackages.filter { it !in installedNames }
+
+        // Also attempt to read the own app info via two separate methods; any
+        // discrepancy between them is a sign of active interception.
+        val ownPkg = context.packageName
+        val visibleViaGetAppInfo = runCatching {
+            pm.getApplicationInfo(ownPkg, 0)
+            true
+        }.getOrElse { false }
+        val visibleViaGetPkgInfo = runCatching {
+            pm.getPackageInfo(ownPkg, 0)
+            true
+        }.getOrElse { false }
+        val selfVisibilityInconsistent = visibleViaGetAppInfo != visibleViaGetPkgInfo
+
+        // Compare getInstalledPackages vs getInstalledApplications — same filter
+        // path but different AIDL methods; a significant size difference suggests
+        // per-method discrepancy in the hooked PMS.
+        val pkgCount = installedNames.size
+        val appCount = runCatching {
+            pm.getInstalledApplications(0).size
+        }.getOrElse { 0 }
+        val countDiscrepancy = if (pkgCount > 0 && appCount > 0) {
+            Math.abs(pkgCount - appCount) > 10
+        } else false
+
+        val indicators = mutableListOf<String>()
+        if (missingAlwaysVisible.isNotEmpty()) {
+            indicators.add("Always-visible packages missing: ${missingAlwaysVisible.joinToString()}")
+        }
+        if (selfVisibilityInconsistent) {
+            indicators.add("getApplicationInfo/getPackageInfo inconsistency for own package")
+        }
+        if (countDiscrepancy) {
+            indicators.add("Package count anomaly: getInstalledPackages=$pkgCount vs getInstalledApplications=$appCount")
+        }
+
+        return if (indicators.isNotEmpty()) {
+            DetectionResult(
+                id = "reveny_hma_filter_behavior",
+                name = context.getString(R.string.chk_reveny_hma_filter_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_reveny_hma_filter_desc),
+                detailedReason = context.getString(
+                    R.string.chk_reveny_hma_filter_reason,
+                    indicators.joinToString("; ")
+                ),
+                solution = context.getString(R.string.chk_reveny_hma_filter_solution),
+                technicalDetail = indicators.joinToString("\n")
+            )
+        } else {
+            DetectionResult(
+                id = "reveny_hma_filter_behavior",
+                name = context.getString(R.string.chk_reveny_hma_filter_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_reveny_hma_filter_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_hma_filter_reason_nd),
+                solution = context.getString(R.string.no_action_required),
+                technicalDetail = "pkgCount=$pkgCount appCount=$appCount"
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Check 5d: HMA /data/app directory scan
+    //
+    // PackageManager hooks (HMA's shouldFilterApplication) prevent queries for
+    // HMA's own package from returning results — but they cannot remove the APK
+    // installation directory that the Android installer created in /data/app.
+    //
+    // We scan /data/app for directory entries whose names start with any of
+    // HMA's known package name strings.  A match means HMA is physically
+    // installed even if it is completely invisible to PackageManager.
+    // -------------------------------------------------------------------------
+    private fun checkHmaDataAppScan(): DetectionResult {
+        val hmaPackages = arrayOf(
+            "com.tsng.hidemyapplist",
+            "com.tsng.hidemyapplist.debug",
+            "cn.hidemyapplist"
+        )
+        val found = scanDataAppForPackages(*hmaPackages)
+
+        return if (found.isNotEmpty()) {
+            DetectionResult(
+                id = "reveny_hma_data_app_scan",
+                name = context.getString(R.string.chk_reveny_hma_data_app_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_reveny_hma_data_app_desc),
+                detailedReason = context.getString(
+                    R.string.chk_reveny_hma_data_app_reason,
+                    found.joinToString("; ")
+                ),
+                solution = context.getString(R.string.chk_reveny_hma_data_app_solution),
+                technicalDetail = found.joinToString("\n")
+            )
+        } else {
+            DetectionResult(
+                id = "reveny_hma_data_app_scan",
+                name = context.getString(R.string.chk_reveny_hma_data_app_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_reveny_hma_data_app_desc_nd),
+                detailedReason = context.getString(R.string.chk_reveny_hma_data_app_reason_nd),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Scans /data/app for installed package directories matching any of the
+     * given package name prefixes.  This bypasses PackageManager hooks (e.g.
+     * HMA's shouldFilterApplication) because we read the file-system directly.
+     *
+     * Android 9+ layout:  /data/app/~~RANDOM==/PACKAGE-RANDOM==/base.apk
+     * Android 7–8 layout: /data/app/PACKAGE-N/base.apk
+     *
+     * Returns a list of matching install-directory paths.
+     */
+    private fun scanDataAppForPackages(vararg packages: String): List<String> {
+        val found = mutableListOf<String>()
+        try {
+            val dataApp = File("/data/app")
+            val outerEntries = dataApp.listFiles() ?: return found
+            for (outer in outerEntries) {
+                if (!outer.isDirectory) continue
+                val outerName = outer.name
+                // Android 7–8 flat layout: entry is directly the package install dir
+                for (pkg in packages) {
+                    if (outerName == pkg || outerName.startsWith("$pkg-")) {
+                        found.add(outer.path)
+                    }
+                }
+                // Android 9+ double-encoded layout: outer dir is ~~RANDOM==
+                if (outerName.startsWith("~~")) {
+                    try {
+                        val innerEntries = outer.listFiles() ?: continue
+                        for (inner in innerEntries) {
+                            if (!inner.isDirectory) continue
+                            for (pkg in packages) {
+                                if (inner.name == pkg || inner.name.startsWith("$pkg-")) {
+                                    found.add(inner.path)
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+        } catch (_: Exception) {}
+        return found
+    }
+
     private fun readProp(key: String): String? {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("getprop", key))
