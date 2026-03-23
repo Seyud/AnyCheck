@@ -1690,4 +1690,13 @@
     <string name="chk_ruru_hma_dir_reason_nd">No directories matching the pattern /data/misc/hide_my_applist_* were found, indicating HMA v3+ has not been installed.</string>
     <string name="chk_ruru_hma_dir_solution">Uninstall Hide My Applist and reboot. If HMA must remain installed, remove this application from its filter list to prevent app-list hiding.</string>
 
+    <!-- XposedDetector: Check 27 — JNI native LSPosed detection -->
+    <string name="chk_native_lsposed_name">LSPosed Detected (Native)</string>
+    <string name="chk_native_lsposed_name_nd">Native LSPosed Detection</string>
+    <string name="chk_native_lsposed_desc">LSPosed / LSPlant detected via native C++ probes that bypass Java-level hooks.</string>
+    <string name="chk_native_lsposed_desc_nd">No LSPosed / LSPlant indicators found by native C++ probes.</string>
+    <string name="chk_native_lsposed_reason">Native probes found: %1$s. Checks: raw /proc/self/maps syscall scan, dlopen(RTLD_NOLOAD), dlsym XposedBridge symbols, stat() path check, ro.dalvik.vm.native.bridge property, smaps Private_Dirty.</string>
+    <string name="chk_native_lsposed_reason_nd">All native probes passed: no LSPosed libs in maps, no dlopen match, no exported XposedBridge symbols, no /data/misc/lspd found via stat(), native bridge property unset, no suspicious smaps dirty pages.</string>
+    <string name="chk_native_lsposed_solution">Disable all LSPosed modules targeting this app and reboot.</string>
+
 </resources>

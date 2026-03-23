@@ -1691,4 +1691,13 @@
     <string name="chk_ruru_hma_dir_reason_nd">未发现符合 /data/misc/hide_my_applist_* 模式的目录，表明 HMA v3+ 尚未安装。</string>
     <string name="chk_ruru_hma_dir_solution">卸载 Hide My Applist 并重启。如果 HMA 必须保留，请将此应用从其过滤列表中移除，以防止应用列表被隐藏。</string>
 
+    <!-- XposedDetector：检测 27 — JNI 原生 LSPosed 检测 -->
+    <string name="chk_native_lsposed_name">检测到 LSPosed（原生层）</string>
+    <string name="chk_native_lsposed_name_nd">原生 LSPosed 检测</string>
+    <string name="chk_native_lsposed_desc">通过绕过 Java 层 Hook 的原生 C++ 探针检测到 LSPosed / LSPlant。</string>
+    <string name="chk_native_lsposed_desc_nd">原生 C++ 探针未发现任何 LSPosed / LSPlant 指标。</string>
+    <string name="chk_native_lsposed_reason">原生探针发现：%1$s。检测手段：raw syscall /proc/self/maps 扫描、dlopen(RTLD_NOLOAD)、dlsym XposedBridge 符号、stat() 路径检查、ro.dalvik.vm.native.bridge 属性、smaps Private_Dirty。</string>
+    <string name="chk_native_lsposed_reason_nd">所有原生探针均通过：maps 中未发现 LSPosed 库、dlopen 无匹配、无导出的 XposedBridge 符号、stat() 未找到 /data/misc/lspd、原生桥属性未设置、smaps 无可疑脏页。</string>
+    <string name="chk_native_lsposed_solution">禁用所有针对此应用的 LSPosed 模块并重启设备。</string>
+
 </resources>

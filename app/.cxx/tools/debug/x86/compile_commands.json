@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/runner/work/AnyCheck/AnyCheck/app/.cxx/Debug/6n433j1h/x86",
+  "command": "/usr/local/lib/android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=i686-none-linux-android26 --sysroot=/usr/local/lib/android/sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot -Danycheck_EXPORTS -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -o CMakeFiles/anycheck.dir/lsposed_detect.cpp.o -c /home/runner/work/AnyCheck/AnyCheck/app/src/main/cpp/lsposed_detect.cpp",
+  "file": "/home/runner/work/AnyCheck/AnyCheck/app/src/main/cpp/lsposed_detect.cpp"
+}
+]

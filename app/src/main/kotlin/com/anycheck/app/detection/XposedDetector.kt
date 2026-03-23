@@ -38,7 +38,8 @@ class XposedDetector(private val context: Context) {
         checkLspdProcess(),
         checkDataAppScanLSPosed(),
         checkOwnOatLSPosedArtifacts(),
-        checkLSPlantNativeLib()
+        checkLSPlantNativeLib(),
+        checkNativeLSPosedDetection()
     )
 
     /** Check 1: Xposed / LSPosed / EdXposed manager package names */
@@ -1537,6 +1538,35 @@ class XposedDetector(private val context: Context) {
                 riskLevel = RiskLevel.CRITICAL,
                 description = context.getString(R.string.chk_lsplant_native_desc_nd),
                 detailedReason = context.getString(R.string.chk_lsplant_native_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
+            )
+        }
+    }
+
+    /** Check 27: Native C++ LSPosed detection (bypasses LSPlant Java hooks) */
+    private fun checkNativeLSPosedDetection(): DetectionResult {
+        val findings = NativeDetector.detectLSPosed()
+        return if (findings.isNotEmpty()) {
+            DetectionResult(
+                id = "native_lsposed_detect",
+                name = context.getString(R.string.chk_native_lsposed_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_native_lsposed_desc),
+                detailedReason = context.getString(R.string.chk_native_lsposed_reason, findings),
+                solution = context.getString(R.string.chk_native_lsposed_solution),
+                technicalDetail = findings
+            )
+        } else {
+            DetectionResult(
+                id = "native_lsposed_detect",
+                name = context.getString(R.string.chk_native_lsposed_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_native_lsposed_desc_nd),
+                detailedReason = context.getString(R.string.chk_native_lsposed_reason_nd),
                 solution = context.getString(R.string.chk_no_action_needed)
             )
         }
