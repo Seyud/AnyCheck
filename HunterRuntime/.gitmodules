@@ -1,4 +1,0 @@
-[submodule "external/lsplant"]
-	path = external/lsplant
-	url = https://github.com/LSPosed/LSPlant.git
-	branch = master
