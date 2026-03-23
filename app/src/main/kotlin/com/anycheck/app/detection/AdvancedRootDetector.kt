@@ -1,7 +1,6 @@
 package com.anycheck.app.detection
 
 import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -973,38 +972,23 @@ class AdvancedRootDetector(private val context: Context) {
     }
 
     /**
-     * Check 20: Root manager intent probe — detects root managers hidden via app-hiding.
+     * Check 20: Root manager launch probe — detects root managers hidden via app-hiding.
      *
      * Conventional package queries can be suppressed by root app-hiding tools such as
-     * Magisk's DenyList / Shamiko / LSPosed modules.  However, the Android framework's
-     * Activity resolution path through ActivityManagerService (AMS) → PackageManagerService
-     * (PMS) has a measurable timing difference depending on whether the target package is
-     * known to the system:
-     *
-     *  • Package NOT installed:  PMS finds nothing and returns almost instantly (<2 ms).
-     *  • Package INSTALLED (even if hidden): PMS must load and parse the package's activity
-     *    table before determining that the specific fake activity does not exist.  This takes
-     *    noticeably longer (typically 10–50 ms).
-     *
-     * The probe fires an explicit ComponentName intent that targets a deliberately
-     * non-existent activity class within each known root manager package.  Because the
-     * activity name is guaranteed not to exist, the call always raises
-     * ActivityNotFoundException — but the time to throw it reveals whether the package is
-     * registered with PMS.
-     *
-     * A baseline is taken against a package name that can never exist on any device
-     * (com.anycheck.__baseline_probe_package__) to isolate IPC overhead.
+     * Magisk's DenyList / Shamiko / LSPosed modules.  However, attempting to launch a
+     * package via the system's activity-resolution path (AMS → PMS) using an implicit
+     * ACTION_MAIN + CATEGORY_LAUNCHER intent with only the package name set bypasses the
+     * PackageManager API layer that hiding tools hook.
      *
      * Detection logic:
-     *   – Target time > 4× baseline AND > 8 ms absolute  → package is likely present but hidden
-     *   – startActivity() does NOT throw ActivityNotFoundException              → definitive detection
+     *   – startActivity() does NOT throw ActivityNotFoundException → package is present
+     *     (the system accepted the launch, triggering the actual app-switch / system jump).
+     *   – ActivityNotFoundException is thrown immediately → package is genuinely not installed.
      *
-     * If conventional package scanning missed the package but this probe fires, app-hiding
-     * is almost certainly in use.
+     * If conventional package scanning missed the package but this probe launches it, app-hiding
+     * (Magisk DenyList / Shamiko / LSPosed hide) is almost certainly in use.
      */
     private fun checkRootManagerIntentProbe(): DetectionResult {
-        // Root manager packages to probe, paired with their display names.
-        // The probe activity class is intentionally non-existent for every package.
         val targets = listOf(
             "com.topjohnwu.magisk"        to "Magisk",
             "io.github.huskydg.magisk"    to "Magisk Delta",
@@ -1016,82 +1000,46 @@ class AdvancedRootDetector(private val context: Context) {
             "com.noshufou.android.su"     to "Superuser"
         )
 
-        // Suffix appended to each package name to form the fake activity class.
-        // Must not match any real activity in any of the above packages.
-        val probeActivitySuffix = ".__AnyCheckProbeActivity_nonexistent__"
-
-        // A package name that provably does not exist on any real device (used for baseline).
-        val baselinePkg = "com.anycheck.__baseline_probe_package__"
-
         val indicators    = mutableListOf<String>()
         val hiddenMarkers = mutableListOf<String>()
 
-        // ── Establish a baseline timing for the IPC overhead alone ───────────
-        // We run several iterations and take the average to smooth out JIT / scheduler noise.
-        val pm = context.packageManager
-        val baselineIterations = 3
-        var baselineTotalNs = 0L
-        val baselineIntent = Intent().apply {
-            component = ComponentName(baselinePkg, "$baselinePkg$probeActivitySuffix")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        repeat(baselineIterations) {
-            val t = System.nanoTime()
-            try { context.startActivity(baselineIntent) } catch (_: Exception) {}
-            baselineTotalNs += (System.nanoTime() - t)
-        }
-        val baselineAvgNs = baselineTotalNs / baselineIterations
-
-        // ── Probe each root manager ──────────────────────────────────────────
         targets.forEach { (pkg, displayName) ->
-            // Skip packages already visible through normal PM queries —
-            // conventional checks (MagiskDetector, KernelSUDetector, etc.) cover those.
-            if (packageExists(pkg)) return@forEach
+            val alreadyVisible = packageExists(pkg)
 
-            val probeIntent = Intent().apply {
-                component = ComponentName(pkg, "$pkg$probeActivitySuffix")
+            // Build a launcher intent that targets the package's main activity without
+            // specifying a particular Activity class.  Using ACTION_MAIN + CATEGORY_LAUNCHER
+            // + setPackage() lets AMS resolve the real entry-point, which can surface packages
+            // hidden from direct PackageManager API calls (e.g. Magisk DenyList / Shamiko).
+            val launchIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                setPackage(pkg)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
-            // Run several iterations and take the median to reduce noise.
-            // Only collect timing samples when probeSucceeded is false — if it succeeds
-            // we report via the probeSucceeded path and don't need timing at all.
-            val sampleList = mutableListOf<Long>()
-            var probeSucceeded = false
-            repeat(3) {
-                if (probeSucceeded) return@repeat
-                val t = System.nanoTime()
-                try {
-                    context.startActivity(probeIntent)
-                    probeSucceeded = true
-                } catch (_: ActivityNotFoundException) {
-                } catch (_: SecurityException) {
-                } catch (_: Exception) {}
-                if (!probeSucceeded) sampleList.add(System.nanoTime() - t)
-            }
-            sampleList.sort()
-            val medianNs = if (sampleList.isNotEmpty()) sampleList[sampleList.size / 2] else 0L
-            val medianMs = medianNs / 1_000_000.0
-            val ratio    = if (baselineAvgNs > 0) medianNs.toDouble() / baselineAvgNs else 0.0
+            var launched = false
+            try {
+                context.startActivity(launchIntent)
+                launched = true
+            } catch (_: ActivityNotFoundException) {
+                // Package is genuinely not installed — expected for clean devices.
+            } catch (_: SecurityException) {
+                // Package exists but is protected; treat as present.
+                launched = true
+            } catch (_: Exception) {}
 
             when {
-                probeSucceeded -> {
-                    // The system accepted the fake-activity intent — the package is installed
-                    // and its manifest somehow matches the probe activity (extremely rare).
-                    indicators.add(
-                        "$displayName ($pkg): intent probe accepted by system " +
-                        "— package is present"
+                launched && !alreadyVisible -> {
+                    // System launched the app even though it was invisible to normal PM queries.
+                    // This is a strong indicator that app-hiding is in use.
+                    hiddenMarkers.add(
+                        "$displayName ($pkg): launched successfully via system intent despite " +
+                        "being hidden from PackageManager — app-hiding (Magisk DenyList / Shamiko) " +
+                        "is in use"
                     )
                 }
-                ratio > 4.0 && medianMs > 8.0 -> {
-                    // Response is far slower than the baseline → PMS had to inspect the
-                    // package's activity list, meaning the package is registered with PMS
-                    // even though normal getPackageInfo() returned NameNotFoundException.
-                    hiddenMarkers.add(
-                        "$displayName ($pkg): probe took ${"%.1f".format(medianMs)} ms " +
-                        "(${"%.1f".format(ratio)}× baseline) " +
-                        "— package appears present but hidden from normal queries"
-                    )
+                launched && alreadyVisible -> {
+                    // Already detected through regular PM queries; the launch confirms it.
+                    indicators.add("$displayName ($pkg): confirmed via direct system launch")
                 }
             }
         }
