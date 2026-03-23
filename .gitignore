@@ -42,3 +42,6 @@ local.properties
 
 # Generated files
 app/src/main/gen/
+
+# NDK/CMake build cache
+app/.cxx/
