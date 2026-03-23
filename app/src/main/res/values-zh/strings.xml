@@ -1664,6 +1664,24 @@
     <string name="chk_reveny_hma_filter_reason_nd">所有 PackageManager 合理性检查均已通过：始终可见的系统包（android、permissioncontroller、settings）均存在；通过 getApplicationInfo 和 getPackageInfo 对自身可见性的检查结果一致；已安装包数量与已安装应用数量在允许误差范围内匹配。</string>
     <string name="chk_reveny_hma_filter_solution">在 Hide My Applist 应用中，从作用域列表中移除此应用，或完全禁用 HMA Xposed 模块并重启。</string>
 
+    <!-- RevenyInspiredDetector：检查 5d – HMA /data/app 目录扫描 -->
+    <string name="chk_reveny_hma_data_app_name">发现 Hide My Applist 安装目录</string>
+    <string name="chk_reveny_hma_data_app_name_nd">Hide My Applist /data/app 扫描</string>
+    <string name="chk_reveny_hma_data_app_desc">直接在 /data/app 中发现了 Hide My Applist APK 安装目录，绕过了所有 PackageManager 钩子。</string>
+    <string name="chk_reveny_hma_data_app_desc_nd">在 /data/app 下未发现 Hide My Applist APK 安装目录。</string>
+    <string name="chk_reveny_hma_data_app_reason">Android 安装程序始终在 /data/app/~~RANDOM==/PACKAGE-RANDOM==/ (Android 9+) 或 /data/app/PACKAGE-N/ (Android 7–8) 下为每个已安装的应用创建物理目录。HMA 的 PackageManager 钩子可以对 API 查询隐藏该包，但无法删除该目录。找到以下匹配条目：%1$s。其存在证实 HMA 已在此设备上实际安装。</string>
+    <string name="chk_reveny_hma_data_app_reason_nd">在 /data/app 下未发现与 Hide My Applist 包名（com.tsng.hidemyapplist、cn.hidemyapplist）匹配的目录。</string>
+    <string name="chk_reveny_hma_data_app_solution">通过 HMA 自身界面或 adb（pm uninstall com.tsng.hidemyapplist）卸载 Hide My Applist 并重启。</string>
+
+    <!-- XposedDetector：检查 26 — 进程内存映射中的 LSPlant 原生库 -->
+    <string name="chk_lsplant_native_name">检测到 LSPlant/LSPosed 原生库已映射</string>
+    <string name="chk_lsplant_native_name_nd">LSPlant 原生库检查</string>
+    <string name="chk_lsplant_native_desc">LSPlant 或 LSPosed 原生库（liblsplant.so / liblsposed.so）已映射到此进程中。</string>
+    <string name="chk_lsplant_native_desc_nd">在进程内存映射中未发现 LSPlant 或 LSPosed 原生库。</string>
+    <string name="chk_lsplant_native_reason">LSPlant 是驱动 LSPosed 的 ART 钩子引擎。当 LSPosed 对此应用中的方法进行钩挂时，它会将 liblsplant.so 加载到进程中。该库在 /proc/self/maps 中以命名映射的形式出现，无法被 Java 层钩子隐藏。发现：%1$s。</string>
+    <string name="chk_lsplant_native_reason_nd">在 /proc/self/maps 中未发现 LSPlant 或 LSPosed 原生库（liblsplant.so、liblsposed.so、libxposed-native.so、liblspd.so 等）。</string>
+    <string name="chk_lsplant_native_solution">禁用所有针对此应用的 LSPosed 模块并重启。如果 LSPosed 必须保持活跃，请将此应用从每个模块的作用域列表中移除。</string>
+
     <!-- RuruInspiredDetector：检查 6b – HMA 当前数据目录 -->
     <string name="chk_ruru_hma_dir_name">检测到 Hide My Applist 数据目录</string>
     <string name="chk_ruru_hma_dir_name_nd">Hide My Applist 数据目录检查</string>

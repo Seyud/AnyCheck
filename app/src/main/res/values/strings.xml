@@ -796,6 +796,15 @@
     <string name="chk_own_oat_reason_nd">This app\'s oat/ subdirectory contains only the standard artefacts (base.odex, base.vdex, optionally base.art) and the OAT file starts with the expected magic bytes (6f 61 74 0a), indicating no hook-framework deoptimisation.</string>
     <string name="chk_own_oat_solution">Disable all LSPosed/Xposed modules that target this app, then reboot so ART recompiles the OAT file cleanly.</string>
 
+    <!-- XposedDetector: Check 26 — LSPlant native library in process maps -->
+    <string name="chk_lsplant_native_name">LSPlant/LSPosed Native Library Mapped</string>
+    <string name="chk_lsplant_native_name_nd">LSPlant Native Library Check</string>
+    <string name="chk_lsplant_native_desc">LSPlant or LSPosed native library (liblsplant.so / liblsposed.so) is mapped into this process.</string>
+    <string name="chk_lsplant_native_desc_nd">No LSPlant or LSPosed native libraries found in the process memory map.</string>
+    <string name="chk_lsplant_native_reason">LSPlant is the ART hooking engine that powers LSPosed. When LSPosed hooks a method in this app, it loads liblsplant.so into the process. This library appears as a named mapping in /proc/self/maps and cannot be hidden by Java-level hooks. Found: %1$s.</string>
+    <string name="chk_lsplant_native_reason_nd">No LSPlant or LSPosed native libraries (liblsplant.so, liblsposed.so, libxposed-native.so, liblspd.so, etc.) were found in /proc/self/maps.</string>
+    <string name="chk_lsplant_native_solution">Disable all LSPosed modules that target this app and reboot. If LSPosed must remain active, remove this app from every module\'s scope list.</string>
+
 
     <!-- AdvancedRootDetector strings -->
     <string name="chk_adv_su_path_name">Su Binary Found</string>

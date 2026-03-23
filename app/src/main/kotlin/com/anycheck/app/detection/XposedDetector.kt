@@ -37,7 +37,8 @@ class XposedDetector(private val context: Context) {
         checkZygiskModuleInjectionInMaps(),
         checkLspdProcess(),
         checkDataAppScanLSPosed(),
-        checkOwnOatLSPosedArtifacts()
+        checkOwnOatLSPosedArtifacts(),
+        checkLSPlantNativeLib()
     )
 
     /** Check 1: Xposed / LSPosed / EdXposed manager package names */
@@ -1389,22 +1390,47 @@ class XposedDetector(private val context: Context) {
                     )
                 }
 
-                // Verify OAT magic bytes if the odex file exists
                 val odexFile = File(oatDir, "base.odex")
                 if (odexFile.exists() && odexFile.length() >= 4) {
                     try {
-                        val magic = ByteArray(4)
-                        odexFile.inputStream().use { it.read(magic) }
-                        // Standard ART OAT magic: 'o' 'a' 't' '\n' (0x6f 0x61 0x74 0x0a)
-                        val valid = magic[0] == 0x6f.toByte() &&
-                            magic[1] == 0x61.toByte() &&
-                            magic[2] == 0x74.toByte() &&
-                            magic[3] == 0x0a.toByte()
-                        if (!valid) {
-                            indicators.add(
-                                "Unexpected OAT magic in oat/$abi/base.odex: " +
-                                    magic.joinToString("") { "%02x".format(it) }
-                            )
+                        odexFile.inputStream().use { stream ->
+                            val header = ByteArray(4)
+                            stream.read(header)
+                            // Standard ART OAT magic: 'o' 'a' 't' '\n' (0x6f 0x61 0x74 0x0a)
+                            val valid = header[0] == 0x6f.toByte() &&
+                                header[1] == 0x61.toByte() &&
+                                header[2] == 0x74.toByte() &&
+                                header[3] == 0x0a.toByte()
+                            if (!valid) {
+                                indicators.add(
+                                    "Unexpected OAT magic in oat/$abi/base.odex: " +
+                                        header.joinToString("") { "%02x".format(it) }
+                                )
+                            }
+                        }
+                    } catch (_: Exception) {}
+
+                    // Scan ODEX binary for LSPosed/LSPlant string markers.
+                    // When LSPosed is active its framework strings may be baked
+                    // into the compiled OAT code or embedded in the DEX string pool
+                    // that is embedded in the ODEX.  This mirrors the technique
+                    // used by reveny/Android-Native-Root-Detector to detect LSPosed
+                    // by inspecting its own compiled artefact.
+                    try {
+                        val lsposedMarkers = listOf(
+                            "lsposed", "lsplant", "liblsplant", "lspd",
+                            "edxposed", "xposedbridge", "XposedBridge",
+                            "de.robv.android.xposed"
+                        )
+                        val odexBytes = odexFile.readBytes()
+                        val odexText = String(odexBytes, Charsets.ISO_8859_1)
+                        for (marker in lsposedMarkers) {
+                            if (odexText.contains(marker, ignoreCase = true)) {
+                                indicators.add(
+                                    "LSPosed marker \"$marker\" found in oat/$abi/base.odex"
+                                )
+                                break // one marker is sufficient evidence
+                            }
                         }
                     } catch (_: Exception) {}
                 }
@@ -1450,6 +1476,71 @@ class XposedDetector(private val context: Context) {
         detailedReason = context.getString(R.string.chk_own_oat_reason_nd),
         solution = context.getString(R.string.chk_no_action_needed)
     )
+
+    /**
+     * Check 26: LSPlant native library in process memory map.
+     *
+     * LSPlant is the ART hooking engine that powers LSPosed.  When LSPosed is
+     * active and has hooked at least one method in this app, it loads its
+     * native library (liblsplant.so) and potentially other support libs
+     * (liblsposed.so, libxposed-native.so, liblspd.so) into the process.
+     * These appear as named mappings in /proc/self/maps even when the DEX-level
+     * checks are bypassed.
+     *
+     * Note: if no module targets this app, LSPlant may not be mapped here —
+     * this check is complementary to the other LSPosed checks.
+     */
+    private fun checkLSPlantNativeLib(): DetectionResult {
+        val lsplantLibs = listOf(
+            "liblsplant.so",
+            "liblsposed.so",
+            "libxposed-native.so",
+            "liblspd.so",
+            "liblspatch.so",
+            "libfake-linker.so"   // used by LSPosed's zygisk variant
+        )
+        val found = mutableListOf<String>()
+        try {
+            File("/proc/self/maps").forEachLine { line ->
+                val path = line.trim().split("\\s+".toRegex()).lastOrNull()
+                    ?.takeIf { it.startsWith("/") } ?: return@forEachLine
+                val filename = path.substringAfterLast("/")
+                val match = lsplantLibs.firstOrNull { filename.equals(it, ignoreCase = true) }
+                if (match != null) {
+                    val entry = path.take(120)
+                    if (!found.contains(entry)) found.add(entry)
+                }
+            }
+        } catch (_: Exception) {}
+
+        return if (found.isNotEmpty()) {
+            DetectionResult(
+                id = "lsplant_native_lib",
+                name = context.getString(R.string.chk_lsplant_native_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_lsplant_native_desc),
+                detailedReason = context.getString(
+                    R.string.chk_lsplant_native_reason,
+                    found.joinToString("; ")
+                ),
+                solution = context.getString(R.string.chk_lsplant_native_solution),
+                technicalDetail = "Mapped libs: ${found.joinToString("; ")}"
+            )
+        } else {
+            DetectionResult(
+                id = "lsplant_native_lib",
+                name = context.getString(R.string.chk_lsplant_native_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.CRITICAL,
+                description = context.getString(R.string.chk_lsplant_native_desc_nd),
+                detailedReason = context.getString(R.string.chk_lsplant_native_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
+            )
+        }
+    }
 
     // ---- Utilities ----
 
