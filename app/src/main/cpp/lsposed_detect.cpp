@@ -9,12 +9,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <sys/system_properties.h>
 #include <android/log.h>
 #include <stdint.h>
+#include <cerrno>
 
 #include "hunter_elf.h"
 
@@ -883,4 +885,113 @@ Java_com_anycheck_app_detection_NativeDetector_detectNetlinkNativeJni(JNIEnv *en
         result += findings[i];
     }
     return env->NewStringUTF(result.c_str());
+}
+
+// ---------------------------------------------------------------------------
+// N14 — HMA whitelist detection via raw fstatat syscall
+// Probes /data/user/0/{root_manager} for known root manager packages.
+// EACCES (errno=13) means the directory exists → root manager is present.
+// If all root managers return ENOENT, probes mandatory system-app directories
+// (com.android.shell, com.android.settings, android) which must always exist.
+// If those also return ENOENT, HMA whitelist mode is hiding packages from us.
+// ---------------------------------------------------------------------------
+static std::string probeHMAWhitelist() {
+    static const char *ROOT_MANAGERS[] = {
+        "com.topjohnwu.magisk",
+        "io.github.lsposed.manager",
+        "org.lsposed.manager",
+        "me.weishu.kernelsu",
+        "me.bmax.apatch",
+        "io.github.vvb2060.magisk",
+        "com.canyie.dreamland.manager",
+        "com.fox2code.mmm",
+        "com.github.capntrips.kernelflasher",
+        nullptr
+    };
+    static const char *SYSTEM_APPS[] = {
+        "com.android.shell",
+        "com.android.settings",
+        "android",
+        nullptr
+    };
+
+    struct stat st{};
+    std::string rootManagersFound;
+    bool anyRootManagerVisible = false;
+
+    for (int i = 0; ROOT_MANAGERS[i] != nullptr; ++i) {
+        std::string path = std::string("/data/user/0/") + ROOT_MANAGERS[i];
+        errno = 0;
+        long res = syscall(__NR_fstatat, AT_FDCWD, path.c_str(), &st, 0);
+        if (res == 0 || errno == EACCES) {
+            if (!rootManagersFound.empty()) rootManagersFound += ',';
+            rootManagersFound += ROOT_MANAGERS[i];
+            anyRootManagerVisible = true;
+        }
+    }
+
+    if (anyRootManagerVisible) {
+        return std::string("root_managers:") + rootManagersFound;
+    }
+
+    // All root manager dirs returned ENOENT — check mandatory system-app dirs.
+    // These must always exist on any real Android device. If they also return
+    // ENOENT via the raw syscall, HMA (or a similar hook) is masking them.
+    bool systemAppVisible = false;
+    for (int i = 0; SYSTEM_APPS[i] != nullptr; ++i) {
+        std::string path = std::string("/data/user/0/") + SYSTEM_APPS[i];
+        errno = 0;
+        long res = syscall(__NR_fstatat, AT_FDCWD, path.c_str(), &st, 0);
+        if (res == 0 || errno == EACCES) {
+            systemAppVisible = true;
+            break;
+        }
+    }
+
+    if (!systemAppVisible) {
+        return "hma_whitelist_detected";
+    }
+
+    return "";
+}
+
+// ---------------------------------------------------------------------------
+// N15 — HMA blacklist detection via raw fstatat syscall
+// Reads st_nlink of /data/user/0 to obtain the kernel's physical subdirectory
+// count (st_nlink - 2). On a normal Android device there are typically well
+// over 100 package data directories. If HMA blacklist mode is configured to
+// hide packages from our app, it may manipulate stat so that the apparent
+// link count drops below 100 — a reliable anomaly indicator.
+// ---------------------------------------------------------------------------
+static std::string probeHMABlacklist() {
+    struct stat st{};
+    errno = 0;
+    long res = syscall(__NR_fstatat, AT_FDCWD, "/data/user/0", &st, 0);
+    if (res != 0) return "";
+
+    int physical_count = static_cast<int>(st.st_nlink) - 2;
+    if (physical_count < 0) physical_count = 0;
+
+    if (physical_count < 100) {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "hma_blacklist_detected:count=%d", physical_count);
+        return std::string(buf);
+    }
+    return "";
+}
+
+// ---------------------------------------------------------------------------
+// JNI entry point — N14: HMA whitelist detection
+// ---------------------------------------------------------------------------
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_anycheck_app_detection_NativeDetector_detectHMAWhitelistJni(JNIEnv *env, jobject /* thiz */) {
+    return env->NewStringUTF(probeHMAWhitelist().c_str());
+}
+
+// ---------------------------------------------------------------------------
+// JNI entry point — N15: HMA blacklist detection
+// ---------------------------------------------------------------------------
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_anycheck_app_detection_NativeDetector_detectHMABlacklistJni(JNIEnv *env, jobject /* thiz */) {
+    return env->NewStringUTF(probeHMABlacklist().c_str());
 }
