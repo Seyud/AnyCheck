@@ -1,0 +1,16 @@
+ext {
+    moduleLibraryName = "example"
+    magiskModuleId = "Zygisk_Zhenxi233_MagiskRuntime"
+    moduleName = "MagiskRuntime"
+    moduleAuthor = "Zhenxi233"
+    moduleDescription = "Runtime For Magisk"
+    moduleVersion = "v1.0.0"
+    moduleVersionCode = 1
+    
+    moduleTagApkName = "com.example.test3"
+    //jar name
+    moduleDexName = "runtime"
+    //kernel driver name
+    moduleKernelName = "runtime"
+
+}
