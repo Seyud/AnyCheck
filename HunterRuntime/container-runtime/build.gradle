@@ -1,0 +1,156 @@
+apply plugin: 'com.android.application'
+//字符串加密Gradle
+apply plugin: 'stringfog'
+
+/**
+ * 读取文件解析的buildConfig
+ */
+def builderConfig = null
+
+/**
+ * 初始化Runtime配置文件的方法。
+ */
+def initRuntimeBuilderConfig() {
+    def configFile = file("${rootDir}/RuntimeBuilderConfig.json")
+    println("builderConfig path ->  " + configFile.getPath())
+    if (!configFile.exists()) {
+        println("builderConfig not find  " + configFile.getPath())
+        throw new GradleException("builderConfig not found at " + configFile.getPath())
+    }
+    def config = new JsonSlurper().parseText(configFile.text)
+    def libName = config.runtime_libName
+    def hideMapName = config.runtime_hideMapName
+    def isDebug = config.isDebug
+    def isOllvm = config.isOllvm
+    println("runtime build libname ---->>>>>>>> " + String.valueOf(libName))
+    println("runtime build hideMapName ---->>>>>>>> " + String.valueOf(hideMapName))
+    println("runtime build isDebug ---->>>>>>>> " + String.valueOf(isDebug))
+    println("runtime build isOllvm ---->>>>>>>> " + String.valueOf(isOllvm))
+    return [libName: libName, hideMapName: hideMapName, isDebug: isDebug, isOllvm: isOllvm]
+}
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    defaultConfig {
+        applicationId "com.hunter.runtime"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 2
+        versionName "1.0"
+        multiDexEnabled true
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+        builderConfig = initRuntimeBuilderConfig()
+
+        buildConfigField "String", "runtime_lib_name", "\"${builderConfig.libName}\""
+        buildConfigField "boolean", "isDebug", "${builderConfig.isDebug}"
+
+        externalNativeBuild {
+            cmake {
+                arguments "-DZHENXI_BUILD_LIB_NAME=" + String.valueOf(builderConfig.libName)
+                arguments "-DHomePath=" + project.rootProject.projectDir
+            }
+        }
+    }
+
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            externalNativeBuild {
+                cmake {
+                    arguments "-DZHENXI_BUILD_TYPE=Debug"
+                }
+            }
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            externalNativeBuild {
+                cmake {
+                    arguments "-DZHENXI_BUILD_TYPE=RELEASE"
+                }
+            }
+        }
+
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
+
+    lintOptions {
+        // true--错误发生后停止gradle构建
+        abortOnError false
+        // true--只报告error
+        ignoreWarnings true
+    }
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/io.netty.versions.properties'
+        exclude 'META-INF/INDEX.LIST'
+        exclude 'META-INF/com.android.tools/proguard/coroutines.pro'
+
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        prefab true
+    }
+
+    //remove liblog.so
+    packagingOptions {
+        exclude 'lib/arm64-v8a/liblog.so'
+        exclude 'lib/armeabi-v7a/liblog.so'
+    }
+
+    ndkVersion rootProject.ext.ndkVersion
+}
+
+dependencies {
+    //android 基础组件升级到1.3.1
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    api project(path: ':common')
+    //配置相关
+    //API代码库
+    api project(path: ':HunterApi')
+    // 字符串加密 这里要和上面选用的加解密算法库一致，用于运行时解密。
+    implementation 'com.github.megatronking.stringfog:xor:4.0.1'
+
+    //lspant
+    //implementation "org.lsposed.lsplant:lsplant:5.2"
+    implementation "org.lsposed.lsplant:lsplant-standalone:5.2"
+
+    //lspant api
+    implementation project(path: ':LspLant')
+
+    //hide api bypass
+    implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:4.3'
+
+}
+
+import com.github.megatronking.stringfog.plugin.kg.RandomKeyGenerator
+import groovy.json.JsonSlurper
+
+//import com.github.megatronking.stringfog.plugin.kg.HardCodeKeyGenerator
+
+stringfog {
+    enable true
+    implementation 'com.github.megatronking.stringfog.xor.StringFogImpl'
+    //只混淆zhenxi下的
+    fogPackages = ['com.hunter']
+    kg new RandomKeyGenerator()
+    //kg new HardCodeKeyGenerator("Zhenxi233")
+    mode bytes
+}

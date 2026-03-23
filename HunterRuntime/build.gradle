@@ -1,0 +1,66 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    ext {
+
+        //Android 编译版本相关
+        compileSdkVersion = 33
+        buildToolsVersion = '30.0.3'
+        minSdkVersion = 27
+        targetSdkVersion = 33
+
+        ndkVersion = '25.2.9519653'
+
+        MagiskOut = file("$rootDir/MagiskOut")
+
+        RuntimeEngineVersionCode = 1
+        RuntimeEngineVersion = "1.0.0-SNPSHOT"
+        RUNTIME_CONFIG_PROPERTIES = "RunTimeConfig.properties"
+        RUNTIME_ENGINE_RESOURCE_APK_NAME = "runtime-engine.apk";
+    }
+    dependencies {
+        //字符串加密相关库文件
+        classpath 'com.github.megatronking.stringfog:gradle-plugin:4.0.1'
+        // 选用加解密算法库，默认实现了xor算法，也可以使用自己的加解密库。
+        classpath 'com.github.megatronking.stringfog:xor:4.0.1'
+        //把xposed模块等lib打入到zhenxi-api 会用到
+        classpath 'com.kezong:fat-aar:1.2.15'
+    }
+}
+
+plugins {
+    id 'com.android.application' version '7.4.2' apply false
+    id 'com.android.library' version '7.4.2' apply false
+}
+
+allprojects {
+    repositories {
+       
+        flatDir {
+            dirs 'libs'
+        }
+        maven {
+            name "aliyunmaven"
+            url "https://maven.aliyun.com/repository/public"
+        }
+        maven {
+            name "aliyunGoogle"
+            url "https://maven.aliyun.com/repository/google"
+        }
+        maven { url 'https://www.jitpack.io' }
+
+        google()
+        mavenCentral()
+
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+
+ext {
+    zhenxiEngineVersionCode = 1
+    zhenxiEngineVersion = "1.0.0-SNPSHOT"
+}

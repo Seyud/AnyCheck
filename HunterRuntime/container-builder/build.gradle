@@ -1,0 +1,121 @@
+import groovy.json.JsonSlurper
+import netscape.javascript.JSObject
+
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+
+buildscript {
+    ext.kotlin_version = '1.9.0'
+    repositories {
+        maven { url 'https://maven.aliyun.com/nexus/content/groups/public/' }
+        maven { url 'https://jitpack.io' }
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "com.github.jengelman.gradle.plugins:shadow:2.0.4"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.21"
+    }
+}
+dependencies {
+    api 'org.smali:smali:2.3.4'
+    api 'org.smali:baksmali:2.3.4'
+    api 'commons-io:commons-io:2.6'
+    api 'org.apache.commons:commons-lang3:3.7'
+    api 'commons-cli:commons-cli:1.4'
+    api 'org.apache.ant:ant:1.10.5'
+    api 'com.beust:jcommander:1.64'
+    api 'com.google.guava:guava:27.1-android'
+    api 'org.antlr:antlr-runtime:3.5.2'
+    api 'org.antlr:antlr:3.5.2'
+
+
+    implementation 'xpp3:xpp3:1.1.4c'
+    implementation 'org.yaml:snakeyaml:1.18:android'
+
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation files('src/libs/dexlib2-2.3.4.jar')
+    implementation files('src/libs/commons-text-1.9.jar')
+    implementation files('src/libs/snakeyaml-1.29-android.jar')
+    implementation files('src/libs/smali-2.3.4.jar')
+
+    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.68'
+    implementation 'org.bouncycastle:bcprov-jdk15to18:1.68'
+    implementation project(':common')
+
+    //https://github.com/TimScriptov/apksigner
+    //implementation 'com.github.TimScriptov:apksigner:Tag'
+    //gradle脚本库
+    implementation 'org.codehaus.groovy:groovy-all:2.5.14'
+}
+
+
+//设置builder的gradle详细的原因
+//https://www.cnblogs.com/duanxz/p/3555697.html
+//gradle.projectsEvaluated {
+//    tasks.withType(JavaCompile) {
+//        //打印已过时的api,详细报错原因
+//        options.compilerArgs << "-Xlint:deprecation"
+//    }
+//}
+
+//支持U8,防止编译java文件报错
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+//排除冲突文件
+tasks.withType(Copy).configureEach { duplicatesStrategy 'exclude' }
+
+boolean isDebug = true;
+//解析项目配置文件
+tasks.register('readJsonFile') {
+    def configFile = file("${rootDir}/RuntimeBuilderConfig.json")
+    println("builderConfig path ->  " + configFile.getPath())
+    if (!configFile.exists()) {
+        println("builderConfig not find  " + configFile.getPath())
+        return
+    }
+    def config = new JsonSlurper().parseText(configFile.text)
+    isDebug = config.isDebug
+    println("builderConfig info ->  " + config)
+}
+//debug模式在执行之前不需要进行clean
+tasks.register('injectzhenxiEngineAPK', Copy) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    if (isDebug) {
+        from "${rootDir}/container-runtime/build/outputs/apk/debug/container-runtime-debug.apk"
+    } else {
+        from "${rootDir}/container-runtime/build/outputs/apk/release/container-runtime-release-unsigned.apk"
+    }
+    into "${rootDir}/temp/"
+    rename {
+        String.valueOf(rootProject.ext.RUNTIME_ENGINE_RESOURCE_APK_NAME)
+    }
+}
+
+if(isDebug) {
+    println("builder start assembleDebug")
+    //执行task,这个task主要为了生成apk
+    injectzhenxiEngineAPK.dependsOn(':container-runtime:assembleDebug')
+}else {
+    println("builder start assembleRelease")
+    injectzhenxiEngineAPK.dependsOn(':container-runtime:assembleRelease')
+}
+processResources.dependsOn(injectzhenxiEngineAPK)
+repositories {
+    mavenCentral()
+}
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}

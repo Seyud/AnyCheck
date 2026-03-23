@@ -1,0 +1,6 @@
+/build/
+/.gradle/
+/.cxx/
+
+
+/src/main/resources/zhenxi_config.properties

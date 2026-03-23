@@ -1,0 +1,36 @@
+pluginManagement {
+    repositories {
+        maven {
+            name "aliyunmaven"
+            url "https://maven.aliyun.com/repository/public"
+        }
+        maven {
+            name "aliyunGoogle"
+            url "https://maven.aliyun.com/repository/google"
+        }
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+//dependencyResolutionManagement {
+//    repositories {
+//        maven { url "https://jitpack.io" }
+//        google()
+//        mavenCentral()
+//    }
+//}
+
+rootProject.name = 'HunterRuntime'
+include ':test'
+
+include ':common',
+        ':container-builder',
+        ':container-runtime',
+        ':HunterApi',
+//        ':nativeLib',
+        ':LspLant',
+        ':magisk_module',
+
+ ':hiddenapi:stubs',
+ ':hiddenapi:bridge'

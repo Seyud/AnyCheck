@@ -1,0 +1,269 @@
+import groovy.json.JsonSlurper
+import org.apache.tools.ant.filters.FixCrLfFilter
+
+import java.nio.file.Files
+import java.nio.file.Paths
+
+
+plugins {
+    id 'com.android.application'
+}
+apply from: rootProject.file('magisk_module/config.gradle')
+
+boolean isHookKernel = false
+android {
+    namespace 'com.runtime.magisk'
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    ndkVersion = rootProject.ext.ndkVersion
+    defaultConfig {
+        applicationId "com.runtime.magisk"
+        versionCode 1
+        versionName "1.0.0"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        multiDexEnabled false
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+
+        buildConfigField "String", "tagPackageName", "\"$moduleTagApkName\""
+        buildConfigField "String", "RuntimeDexName", "\"$moduleDexName\""
+
+        externalNativeBuild {
+            cmake {
+                arguments "-DHomePath=${project.rootProject.projectDir}",
+                        "-DSO_NAME=${moduleLibraryName}",
+                        "-DTAG_APP_NAME=${moduleTagApkName}",
+                        "-DRUNTIME_KERNEL_NAME=${moduleKernelName}",
+                        "-DRUNTIME_JAR_NAME=${moduleDexName}"
+            }
+        }
+
+    }
+
+    externalNativeBuild {
+        cmake {
+            //path "src/main/CMakeLists.txt"
+            path "src/main/jni/CMakeLists.txt"
+            version = "3.22.1+"
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+            externalNativeBuild {
+                cmake {
+                    arguments "-DZHENXI_BUILD_TYPE=DEBUG"
+                }
+            }
+        }
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            externalNativeBuild {
+                cmake {
+                    arguments "-DZHENXI_BUILD_TYPE=Release"
+                }
+            }
+        }
+    }
+    buildFeatures {
+        buildConfig = true
+        viewBinding true
+        prefab true
+        aidl true
+    }
+    lintOptions {
+        // true--错误发生后停止gradle构建
+        abortOnError false
+        // true--只报告error
+        ignoreWarnings true
+    }
+    packagingOptions {
+        exclude 'lib/mips64/liblog.so'
+        exclude 'lib/arm64-v8a/liblog.so'
+        exclude 'lib/armeabi-v7a/liblog.so'
+        exclude 'lib/x86/liblog.so'
+        exclude 'lib/x86_64/liblog.so'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        main.java.srcDirs += 'src/main/java'
+    }
+
+
+}
+
+tasks.register('executeAllReleaseTasks') {
+    dependsOn 'pushRelease'
+    dependsOn 'flashRelease'
+    dependsOn 'flashAndRebootRelease'
+    doLast {
+        println 'Successfully executed all release tasks.'
+    }
+}
+dependencies {
+    //implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation project(path: ':common')
+    implementation project(path: ':LspLant')
+    //system_service api jar
+    //apex/com.android.wifi/javalib/service-wifi.jar
+    //system/framework/framework.jar
+
+//    compileOnly fileTree(dir: 'libs',
+//            includes: ['framework1.jar', 'framework2.jar',
+//                       'framework3.jar', 'framework4.jar',
+//                       'framework-connectivity.jar', 'framework-wifi.jar'
+//            ]
+//    )
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    implementation 'org.apache.commons:commons-lang3:3.13.0'
+    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'com.google.guava:guava:30.1-android'
+
+    implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:4.3'
+
+    compileOnly project(':hiddenapi:stubs')
+    //test oaid
+    implementation fileTree(dir: 'libs',
+            includes: ['XiaomiOaid.jar']
+    )
+    //测试设备指纹
+    //implementation 'com.github.gzu-liyujiang:Android_CN_OAID:4.2.8'
+    //implementation 'com.gitee.li_yu_jiang:Android_CN_OAID:4.2.8'
+
+
+}
+repositories {
+    mavenLocal()
+}
+
+
+afterEvaluate {
+    android.applicationVariants.forEach { variant ->
+        def variantCapped = variant.name.capitalize()
+        println "variantCapped -> $variantCapped"
+        def variantLowered = variant.name.toLowerCase()
+        println "variantLowered -> $variantLowered"
+        def zipName = "${magiskModuleId.replace('_', '-')}-${moduleVersion}-${variantLowered}.zip"
+        println "zipName -> $zipName"
+        println "MagiskOut -> $MagiskOut"
+        def magiskDir = file("$MagiskOut/magisk_module_$variantLowered")
+        println "magiskDir -> $magiskDir"
+        def outZipPath = file("$MagiskOut/$zipName")
+        println "OutZipPath -> $outZipPath"
+        println "------------------------------------------------"
+        //clean work dir
+        if (MagiskOut.exists()) {
+            MagiskOut.deleteDir()
+            MagiskOut.mkdirs()
+        }
+        tasks.register("prepareMagiskFiles${variantCapped}", Sync) {
+            dependsOn("assemble$variantCapped")
+
+            def templatePath = "$rootDir/magisk_module/template/magisk_module"
+
+            into magiskDir
+            from(templatePath) {
+                exclude 'module.prop'
+            }
+            from(templatePath) {
+                include 'module.prop'
+                expand([
+                        id         : magiskModuleId,
+                        name       : moduleName,
+                        version    : moduleVersion,
+                        versionCode: moduleVersionCode.toString(),
+                        author     : moduleAuthor,
+                        description: moduleDescription,
+                ])
+                filter(FixCrLfFilter.class,
+                        eol: FixCrLfFilter.CrLf.newInstance("lf"))
+            }
+            from("$buildDir/intermediates/stripped_native_libs/$variantLowered/out/lib") {
+                into 'lib'
+            }
+            def dexOutPath
+            if (variantLowered == "release") {
+                dexOutPath = layout.buildDirectory.dir("intermediates/dex/$variantCapped/minify${variantCapped}WithR8")
+            } else {
+                dexOutPath = layout.buildDirectory.dir("intermediates/dex/$variantCapped/mergeDex$variantCapped")
+            }
+            doLast {
+                println "start doLast ,pre so "
+                file("$magiskDir/zygisk").mkdirs()
+                fileTree("$magiskDir/lib").visit { f ->
+                    if (!f.directory) return
+                    def srcPath = Paths.get("${f.file.absolutePath}/lib${moduleLibraryName}.so")
+                    def dstPath = Paths.get("$magiskDir/zygisk/${f.path}.so")
+                    Files.move(srcPath, dstPath)
+                }
+                println "start doLast ,pre dex "
+                new File("$magiskDir/lib").deleteDir()
+                //init base dir
+                file("$magiskDir/system/framework").mkdirs()
+                def dexFiles = fileTree(dexOutPath).files.findAll { it.name.endsWith('.dex') }
+                println "magisk module dex size -> $dexFiles "
+                if (dexFiles.size() == 0) {
+                    throw new RuntimeException("Magisk module dex size is 0. No dex files found.")
+                }
+                def outputJar = "$magiskDir/system/framework/${moduleDexName}.jar"
+                ant.jar(destfile: outputJar) {
+                    dexFiles.each { fileset(file: it) }
+                }
+                println "Created framework JAR: $outputJar"
+                if (isHookKernel) {
+                    //注入驱动文件
+                    def kernelFile = file("${projectDir}/src/main/kernel/${moduleKernelName}.ko")
+                    if (!kernelFile.exists()) {
+                        println ">>>>>>>> runtime build not find kernel file " + kernelFile.path
+                        throw new RuntimeException("runtime build not find kernel file " + kernelFile.path)
+                    }
+                    copy {
+                        from kernelFile
+                        into magiskDir
+                    }
+                    println ">>>>>>>> runtime build  kernel file copy success ! " + kernelFile.path
+                }
+            }
+        }
+
+        tasks.register("zip${variantCapped}", Zip) {
+            dependsOn("prepareMagiskFiles${variantCapped}")
+            from magiskDir
+            archiveFileName.set(zipName)
+            //destinationDirectory.set(outDir)
+            destinationDirectory.set(file(MagiskOut))
+            println "println task zip${variantCapped}"
+        }
+
+        tasks.register("push${variantCapped}", Exec) {
+            dependsOn("zip${variantCapped}")
+            workingDir MagiskOut
+            commandLine android.adbExecutable, "push", outZipPath, "/data/local/tmp/"
+            println "println task push ${variantCapped}"
+        }
+
+        tasks.register("flash${variantCapped}", Exec) {
+            dependsOn("push${variantCapped}")
+            commandLine android.adbExecutable, "shell", "su", "-c",
+                    "magisk --install-module /data/local/tmp/${zipName}"
+            println "println task flash${variantCapped}"
+        }
+
+        tasks.register("flashAndReboot${variantCapped}", Exec) {
+            dependsOn("flash${variantCapped}")
+            commandLine android.adbExecutable, "shell", "reboot"
+            //commandLine android.adbExecutable, "shell", "su", "-c", "/system/bin/svc", "power", "reboot"
+            println "println task flashAndReboot${variantCapped}"
+        }
+
+        //variant.assembleProvider.get().finalizedBy("zip${variantCapped}")
+        variant.assembleProvider.get().finalizedBy("flashAndReboot${variantCapped}")
+    }
+}
