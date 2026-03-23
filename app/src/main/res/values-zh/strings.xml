@@ -1637,6 +1637,15 @@
     <string name="chk_reveny_hma_binder_reason_nd">向 PackageManager Binder 发送的 HMAD 事务探针（0x484D4144）未返回任何 Binder 对象，表明 HMA 服务未处于活跃状态。</string>
     <string name="chk_reveny_hma_binder_solution">在 LSPosed 模块管理器中禁用 Hide My Applist 或卸载 HMA 应用，然后重启。如果 HMA 必须继续运行，请将此应用从其隐藏列表中移除。</string>
 
+    <!-- RevenyInspiredDetector：检查 5c – HMA 主动过滤行为检测 -->
+    <string name="chk_reveny_hma_filter_name">Hide My Applist 正在主动过滤包列表</string>
+    <string name="chk_reveny_hma_filter_name_nd">Hide My Applist 过滤行为检查</string>
+    <string name="chk_reveny_hma_filter_desc">检测到 PackageManager 查询异常，表明 Hide My Applist 正在主动向此应用隐藏包信息。</string>
+    <string name="chk_reveny_hma_filter_desc_nd">未检测到 PackageManager 过滤异常；HMA 似乎未针对此应用进行过滤。</string>
+    <string name="chk_reveny_hma_filter_reason">HMA 通过钩住 PackageManagerService 的 shouldFilterApplication()/filterAppAccessLPr() 方法，从查询结果中静默移除指定包。检测到以下异常：%1$s。这些模式与 HMA 被配置为向此应用隐藏包一致。</string>
+    <string name="chk_reveny_hma_filter_reason_nd">所有 PackageManager 合理性检查均已通过：始终可见的系统包（android、permissioncontroller、settings）均存在；通过 getApplicationInfo 和 getPackageInfo 对自身可见性的检查结果一致；已安装包数量与已安装应用数量在允许误差范围内匹配。</string>
+    <string name="chk_reveny_hma_filter_solution">在 Hide My Applist 应用中，从作用域列表中移除此应用，或完全禁用 HMA Xposed 模块并重启。</string>
+
     <!-- RuruInspiredDetector：检查 6b – HMA 当前数据目录 -->
     <string name="chk_ruru_hma_dir_name">检测到 Hide My Applist 数据目录</string>
     <string name="chk_ruru_hma_dir_name_nd">Hide My Applist 数据目录检查</string>
