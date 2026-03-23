@@ -139,6 +139,44 @@ object NativeDetector {
         }
     }
 
+    /**
+     * Probes /data/user/0/{root_manager} for known root manager packages via a
+     * raw fstatat(2) syscall that bypasses libc hooks.  EACCES means the data
+     * directory exists (root manager is installed); if all root managers return
+     * ENOENT and mandatory system-app directories (com.android.shell, android,
+     * com.android.settings) also return ENOENT, HMA whitelist mode is hiding
+     * packages from this app.
+     *
+     * Returns "root_managers:pkg1,pkg2,…" when root managers are found,
+     * "hma_whitelist_detected" when HMA whitelist is active, or "" otherwise.
+     */
+    fun detectHMAWhitelist(): String {
+        if (!libraryLoaded) return ""
+        return try {
+            detectHMAWhitelistJni()
+        } catch (_: Throwable) {
+            ""
+        }
+    }
+
+    /**
+     * Reads st_nlink of /data/user/0 via a raw fstatat(2) syscall to obtain the
+     * kernel's physical subdirectory count (st_nlink − 2).  A typical Android
+     * device has 100 + package data directories.  If HMA blacklist mode is hiding
+     * packages from this app, the apparent count may fall below 100.
+     *
+     * Returns "hma_blacklist_detected:count=N" when the count is suspicious,
+     * or "" otherwise.
+     */
+    fun detectHMABlacklist(): String {
+        if (!libraryLoaded) return ""
+        return try {
+            detectHMABlacklistJni()
+        } catch (_: Throwable) {
+            ""
+        }
+    }
+
     private external fun detectLSPosedJni(): String
     private external fun detectOdexHooksJni(): String
     private external fun detectInlineHooksJni(): String
@@ -147,4 +185,6 @@ object NativeDetector {
     private external fun detectAuditLogJni(): String
     private external fun detectDex2oatNativeJni(): String
     private external fun detectNetlinkNativeJni(): String
+    private external fun detectHMAWhitelistJni(): String
+    private external fun detectHMABlacklistJni(): String
 }

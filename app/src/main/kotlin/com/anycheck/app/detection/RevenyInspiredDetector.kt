@@ -29,6 +29,8 @@ class RevenyInspiredDetector(private val context: Context) {
         checkHmaFilterBehavior(),
         checkHmaDataAppScan(),
         checkHMANativeDetection(),
+        checkHmaWhitelistDetection(),
+        checkHmaBlacklistDetection(),
         checkMountInconsistency(),
         checkAddonDOrInstallRecovery(),
         checkSystemAppsAbsence(),
@@ -947,6 +949,89 @@ class RevenyInspiredDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_hma_native_desc_nd),
                 detailedReason = context.getString(R.string.chk_hma_native_reason_nd),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Check 5e: HMA whitelist detection via raw fstatat syscall (N14)
+    // Probes /data/user/0/{root_manager} dirs.  EACCES means the dir exists.
+    // If all root managers return ENOENT, probes system-app dirs.  If those
+    // also return ENOENT via the raw syscall, HMA whitelist is masking them.
+    // -------------------------------------------------------------------------
+    private fun checkHmaWhitelistDetection(): DetectionResult {
+        val raw = NativeDetector.detectHMAWhitelist()
+        val isHmaWhitelist = raw == "hma_whitelist_detected"
+        val rootManagers = if (raw.startsWith("root_managers:"))
+            raw.removePrefix("root_managers:") else ""
+
+        return when {
+            isHmaWhitelist -> DetectionResult(
+                id = "hma_whitelist_detect",
+                name = context.getString(R.string.chk_hma_whitelist_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_hma_whitelist_desc),
+                detailedReason = context.getString(R.string.chk_hma_whitelist_reason),
+                solution = context.getString(R.string.chk_hma_whitelist_solution),
+                technicalDetail = "hma_whitelist_detected: system-app data dirs invisible via raw fstatat syscall"
+            )
+            rootManagers.isNotEmpty() -> DetectionResult(
+                id = "hma_whitelist_detect",
+                name = context.getString(R.string.chk_hma_whitelist_name_root),
+                category = DetectionCategory.ROOT_MANAGEMENT,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_hma_whitelist_desc_root),
+                detailedReason = context.getString(R.string.chk_hma_whitelist_reason_root, rootManagers),
+                solution = context.getString(R.string.chk_hma_whitelist_solution_root),
+                technicalDetail = "root_managers via fstatat: $rootManagers"
+            )
+            else -> DetectionResult(
+                id = "hma_whitelist_detect",
+                name = context.getString(R.string.chk_hma_whitelist_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_hma_whitelist_desc_nd),
+                detailedReason = context.getString(R.string.chk_hma_whitelist_reason_nd),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Check 5f: HMA blacklist detection via raw fstatat syscall (N15)
+    // Reads st_nlink of /data/user/0 (kernel's physical subdir count).
+    // A normal device has 100+ package data dirs.  If the count is < 100,
+    // HMA blacklist mode is likely hiding most installed packages from us.
+    // -------------------------------------------------------------------------
+    private fun checkHmaBlacklistDetection(): DetectionResult {
+        val raw = NativeDetector.detectHMABlacklist()
+        return if (raw.startsWith("hma_blacklist_detected")) {
+            val count = raw.substringAfter("count=", "?")
+            DetectionResult(
+                id = "hma_blacklist_detect",
+                name = context.getString(R.string.chk_hma_blacklist_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_hma_blacklist_desc),
+                detailedReason = context.getString(R.string.chk_hma_blacklist_reason, count),
+                solution = context.getString(R.string.chk_hma_blacklist_solution),
+                technicalDetail = raw
+            )
+        } else {
+            DetectionResult(
+                id = "hma_blacklist_detect",
+                name = context.getString(R.string.chk_hma_blacklist_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_hma_blacklist_desc_nd),
+                detailedReason = context.getString(R.string.chk_hma_blacklist_reason_nd),
                 solution = context.getString(R.string.no_action_required)
             )
         }
