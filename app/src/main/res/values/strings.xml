@@ -1915,14 +1915,14 @@
     <string name="chk_hunter_elf_symbols_reason_nd">Direct ELF section parsing of all mapped .so files found no symbols belonging to LSPlant, Frida (gum), Dobby, ShadowHook, or Pine hook frameworks.</string>
     <string name="chk_hunter_elf_symbols_solution">Remove the native hook library (liblsplant.so, libfrida-agent.so, libdobby.so, etc.) from the device. Disable the Zygisk/Riru module that injects it and reboot.</string>
 
-    <!-- XposedDetector: Check 30 — Parasite manager shell detection -->
-    <string name="chk_parasite_manager_name">Parasite Manager (Shell/Shizuku) Detected</string>
-    <string name="chk_parasite_manager_name_nd">Parasite Manager Shell Detection</string>
-    <string name="chk_parasite_manager_desc">A shell-based or APK-patching parasite manager (Shizuku, LSPatch) was detected. These frameworks inject Xposed/LSPosed capabilities without a traditional root manager by parasitizing the ADB shell process or patching APKs directly.</string>
-    <string name="chk_parasite_manager_desc_nd">No shell-based parasite managers (Shizuku, LSPatch) detected.</string>
-    <string name="chk_parasite_manager_reason">The following parasite manager indicators were found: %1$s. Shizuku runs a privileged binder service under the ADB shell user (uid 2000), allowing apps to perform operations as shell without full root. LSPatch embeds LSPosed hooks directly inside patched APKs, bypassing system-level framework injection. Either mechanism can be used to apply Xposed modules targeting this app without leaving traditional root artifacts.</string>
-    <string name="chk_parasite_manager_reason_nd">No Shizuku or LSPatch packages, on-disk artifacts, or shell-user lspd processes were detected.</string>
-    <string name="chk_parasite_manager_solution">Uninstall Shizuku, LSPatch, or any associated parasite manager, then reboot the device. If a patched APK is in use, reinstall the original APK from a trusted source.</string>
+    <!-- XposedDetector: Check 30 — LSPosed Parasite mode detection -->
+    <string name="chk_parasite_manager_name">LSPosed Parasite Mode Detected</string>
+    <string name="chk_parasite_manager_name_nd">LSPosed Parasite Mode Detection</string>
+    <string name="chk_parasite_manager_desc">LSPosed Parasite mode is active. In this mode lspd runs as the shell user (uid 2000) without Magisk or KernelSU, and is activated by tapping a notification.</string>
+    <string name="chk_parasite_manager_desc_nd">No LSPosed Parasite mode or LSPatch artifacts detected.</string>
+    <string name="chk_parasite_manager_reason">The following LSPosed Parasite mode indicators were found: %1$s. LSPosed Parasite mode parasitizes the ADB shell process (uid 2000) instead of the root process, requiring no Magisk or KernelSU. The lspd daemon runs as the shell user and is activated by tapping a system notification, making it harder to detect via traditional root artifact scans. LSPatch is a related technique that embeds LSPosed hooks directly inside patched APKs.</string>
+    <string name="chk_parasite_manager_reason_nd">No lspd-as-shell process, Parasite daemon files (/data/local/tmp/lspd), or LSPatch packages and artifacts were detected.</string>
+    <string name="chk_parasite_manager_solution">Disable LSPosed Parasite mode via the LSPosed Manager notification, then uninstall the LSPosed framework. If LSPatch is in use, reinstall the original APK from a trusted source.</string>
 
     <!-- SystemIntegrityDetector: Check 7 — Snapdragon 8 Gen 2 – 8 Elite security patch -->
     <string name="chk_snapdragon_patch_name">Critical Snapdragon Vulnerability — Patch Missing</string>

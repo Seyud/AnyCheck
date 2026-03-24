@@ -1631,56 +1631,24 @@ class XposedDetector(private val context: Context) {
         }
     }
 
-    /** Check 30: Parasite manager shell detection.
+    /** Check 30: LSPosed Parasite mode detection.
      *
-     * "寄生管理器" (Parasite Manager) refers to frameworks that inject Xposed/LSPosed
-     * capabilities without a traditional root manager, instead "parasitizing" the
-     * shell process (ADB/Shizuku) or patching APKs directly (LSPatch).
+     * "寄生管理器" (Parasite Manager) is LSPosed's "Parasite" installation mode.
+     * In this mode LSPosed does not require Magisk or KernelSU; instead it
+     * "parasitizes" the shell process (uid 2000) and is activated by tapping
+     * a special notification.  The lspd daemon therefore runs as the ADB shell
+     * user rather than root, leaving few traditional root artifacts.
      *
      * Detection targets:
-     *  - Shizuku: grants apps shell-level (ADB) access via a binder service;
-     *    used by LSPosed-Shizuku mode to run without Magisk/KernelSU.
-     *  - LSPatch: patches APKs to embed LSPosed functionality without system-wide
-     *    framework injection.
-     *  - lspd running as shell user (uid 2000) instead of root — indicates
-     *    shell/Shizuku-based LSPosed mode rather than Zygisk mode.
+     *  - lspd running as shell user (uid 2000) — the definitive Parasite-mode indicator.
+     *  - /data/local/tmp/lspd — the typical on-disk location of the parasite daemon.
+     *  - LSPatch (org.lsposed.lspatch) — a related non-root technique that embeds
+     *    LSPosed hooks directly inside patched APKs without system-wide injection.
      */
     private fun checkParasiteManagerShell(): DetectionResult {
         val found = mutableListOf<String>()
 
-        // --- (a) Known parasite manager package names ---
-        val parasitePackages = listOf(
-            "moe.shizuku.privileged.api",    // Shizuku (ADB/shell privilege broker)
-            "moe.shizuku.manager",           // Shizuku (older versions)
-            "org.lsposed.lspatch",           // LSPatch (APK-embedded LSPosed)
-            "io.github.lsposed.lspatch"      // LSPatch (alternate package)
-        )
-        val foundPackages = parasitePackages.filter { packageExists(it) }
-        if (foundPackages.isNotEmpty()) {
-            found.add("parasite manager packages: ${foundPackages.joinToString(", ")}")
-        }
-
-        // --- (b) Shizuku on-disk artifacts ---
-        val shizukuPaths = listOf(
-            "/data/local/tmp/shizuku.dex",
-            "/data/local/tmp/shizuku_starter",
-            "/data/user_de/0/moe.shizuku.privileged.api/files/shizuku.dex"
-        )
-        shizukuPaths.forEach { path ->
-            if (File(path).exists()) found.add("Shizuku file: $path")
-        }
-
-        // --- (c) LSPatch artifact directories ---
-        val lspatchPaths = listOf(
-            "/data/adb/lspatch",
-            "/sdcard/Android/data/org.lsposed.lspatch",
-            "/sdcard/Android/data/io.github.lsposed.lspatch"
-        )
-        lspatchPaths.forEach { path ->
-            if (File(path).exists()) found.add("LSPatch artifact: $path")
-        }
-
-        // --- (d) lspd running as shell user (uid=2000) — Shizuku/shell-mode LSPosed ---
+        // --- (a) lspd running as shell user (uid=2000) — the core Parasite-mode signal ---
         try {
             val procDir = File("/proc")
             procDir.listFiles { _, name -> name.all { it.isDigit() } }?.forEach { pidDir ->
@@ -1691,19 +1659,42 @@ class XposedDetector(private val context: Context) {
                         val statusText = File(pidDir, "status").readText()
                         val uid = Regex("Uid:\\s*(\\d+)").find(statusText)
                             ?.groupValues?.get(1)?.toIntOrNull() ?: -1
-                        // uid 2000 = shell, uid 1000 = system — both indicate non-root injection
-                        if (uid == 2000 || uid == 1000) {
-                            found.add("lspd as shell/system (uid=$uid, pid=${pidDir.name})")
+                        // uid 2000 = shell — confirms Parasite mode (not Zygisk/KSU root mode)
+                        if (uid == 2000) {
+                            found.add("lspd running as shell (uid=2000, pid=${pidDir.name})")
                         }
                     }
                 } catch (_: Exception) {}
             }
         } catch (_: Exception) {}
 
-        // --- (e) Shizuku init service property ---
-        val shizukuInitSvc = getSystemProperty("init.svc.shizuku")
-        if (shizukuInitSvc.isNotEmpty()) {
-            found.add("init.svc.shizuku=$shizukuInitSvc")
+        // --- (b) Parasite-mode daemon on-disk artifact ---
+        val parasitePaths = listOf(
+            "/data/local/tmp/lspd",
+            "/data/local/tmp/lspd.dex"
+        )
+        parasitePaths.forEach { path ->
+            if (File(path).exists()) found.add("Parasite daemon file: $path")
+        }
+
+        // --- (c) LSPatch packages — APK-embedded non-root LSPosed injection ---
+        val lspatchPackages = listOf(
+            "org.lsposed.lspatch",
+            "io.github.lsposed.lspatch"
+        )
+        val foundLspatch = lspatchPackages.filter { packageExists(it) }
+        if (foundLspatch.isNotEmpty()) {
+            found.add("LSPatch packages: ${foundLspatch.joinToString(", ")}")
+        }
+
+        // --- (d) LSPatch artifact directories ---
+        val lspatchPaths = listOf(
+            "/data/adb/lspatch",
+            "/sdcard/Android/data/org.lsposed.lspatch",
+            "/sdcard/Android/data/io.github.lsposed.lspatch"
+        )
+        lspatchPaths.forEach { path ->
+            if (File(path).exists()) found.add("LSPatch artifact: $path")
         }
 
         return if (found.isNotEmpty()) {

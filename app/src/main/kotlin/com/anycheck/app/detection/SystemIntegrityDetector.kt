@@ -638,7 +638,10 @@ class SystemIntegrityDetector(private val context: Context) {
 
         // Lexicographic comparison is valid for ISO-8601 "yyyy-MM-dd" strings.
         val currentPatch = Build.VERSION.SECURITY_PATCH
-        val socDisplay = socModel.ifEmpty { boardPlatform.ifEmpty { chipName.ifEmpty { hardware } } }
+        val socDisplay = socModel.takeIf { it.isNotEmpty() }
+            ?: boardPlatform.takeIf { it.isNotEmpty() }
+            ?: chipName.takeIf { it.isNotEmpty() }
+            ?: hardware
 
         return if (currentPatch < requiredPatch) {
             DetectionResult(
