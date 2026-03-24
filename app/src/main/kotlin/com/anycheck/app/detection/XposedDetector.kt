@@ -41,7 +41,8 @@ class XposedDetector(private val context: Context) {
         checkLSPlantNativeLib(),
         checkNativeLSPosedDetection(),
         checkNativeOdexHooks(),
-        checkNativeInlineHooks()
+        checkNativeInlineHooks(),
+        checkParasiteManagerShell()
     )
 
     /** Check 1: Xposed / LSPosed / EdXposed manager package names */
@@ -1625,6 +1626,107 @@ class XposedDetector(private val context: Context) {
                 riskLevel = RiskLevel.CRITICAL,
                 description = context.getString(R.string.chk_native_inline_hooks_desc_nd),
                 detailedReason = context.getString(R.string.chk_native_inline_hooks_reason_nd),
+                solution = context.getString(R.string.chk_no_action_needed)
+            )
+        }
+    }
+
+    /** Check 30: Parasite manager shell detection.
+     *
+     * "寄生管理器" (Parasite Manager) refers to frameworks that inject Xposed/LSPosed
+     * capabilities without a traditional root manager, instead "parasitizing" the
+     * shell process (ADB/Shizuku) or patching APKs directly (LSPatch).
+     *
+     * Detection targets:
+     *  - Shizuku: grants apps shell-level (ADB) access via a binder service;
+     *    used by LSPosed-Shizuku mode to run without Magisk/KernelSU.
+     *  - LSPatch: patches APKs to embed LSPosed functionality without system-wide
+     *    framework injection.
+     *  - lspd running as shell user (uid 2000) instead of root — indicates
+     *    shell/Shizuku-based LSPosed mode rather than Zygisk mode.
+     */
+    private fun checkParasiteManagerShell(): DetectionResult {
+        val found = mutableListOf<String>()
+
+        // --- (a) Known parasite manager package names ---
+        val parasitePackages = listOf(
+            "moe.shizuku.privileged.api",    // Shizuku (ADB/shell privilege broker)
+            "moe.shizuku.manager",           // Shizuku (older versions)
+            "org.lsposed.lspatch",           // LSPatch (APK-embedded LSPosed)
+            "io.github.lsposed.lspatch"      // LSPatch (alternate package)
+        )
+        val foundPackages = parasitePackages.filter { packageExists(it) }
+        if (foundPackages.isNotEmpty()) {
+            found.add("parasite manager packages: ${foundPackages.joinToString(", ")}")
+        }
+
+        // --- (b) Shizuku on-disk artifacts ---
+        val shizukuPaths = listOf(
+            "/data/local/tmp/shizuku.dex",
+            "/data/local/tmp/shizuku_starter",
+            "/data/user_de/0/moe.shizuku.privileged.api/files/shizuku.dex"
+        )
+        shizukuPaths.forEach { path ->
+            if (File(path).exists()) found.add("Shizuku file: $path")
+        }
+
+        // --- (c) LSPatch artifact directories ---
+        val lspatchPaths = listOf(
+            "/data/adb/lspatch",
+            "/sdcard/Android/data/org.lsposed.lspatch",
+            "/sdcard/Android/data/io.github.lsposed.lspatch"
+        )
+        lspatchPaths.forEach { path ->
+            if (File(path).exists()) found.add("LSPatch artifact: $path")
+        }
+
+        // --- (d) lspd running as shell user (uid=2000) — Shizuku/shell-mode LSPosed ---
+        try {
+            val procDir = File("/proc")
+            procDir.listFiles { _, name -> name.all { it.isDigit() } }?.forEach { pidDir ->
+                try {
+                    val cmdline = File(pidDir, "cmdline").readText()
+                        .replace('\u0000', ' ').trim()
+                    if (cmdline.contains("lspd") || cmdline.startsWith("lsp")) {
+                        val statusText = File(pidDir, "status").readText()
+                        val uid = Regex("Uid:\\s*(\\d+)").find(statusText)
+                            ?.groupValues?.get(1)?.toIntOrNull() ?: -1
+                        // uid 2000 = shell, uid 1000 = system — both indicate non-root injection
+                        if (uid == 2000 || uid == 1000) {
+                            found.add("lspd as shell/system (uid=$uid, pid=${pidDir.name})")
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
+
+        // --- (e) Shizuku init service property ---
+        val shizukuInitSvc = getSystemProperty("init.svc.shizuku")
+        if (shizukuInitSvc.isNotEmpty()) {
+            found.add("init.svc.shizuku=$shizukuInitSvc")
+        }
+
+        return if (found.isNotEmpty()) {
+            DetectionResult(
+                id = "parasite_manager_shell",
+                name = context.getString(R.string.chk_parasite_manager_name),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_parasite_manager_desc),
+                detailedReason = context.getString(R.string.chk_parasite_manager_reason, found.joinToString("; ")),
+                solution = context.getString(R.string.chk_parasite_manager_solution),
+                technicalDetail = "Found: ${found.joinToString(" | ")}"
+            )
+        } else {
+            DetectionResult(
+                id = "parasite_manager_shell",
+                name = context.getString(R.string.chk_parasite_manager_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_parasite_manager_desc_nd),
+                detailedReason = context.getString(R.string.chk_parasite_manager_reason_nd),
                 solution = context.getString(R.string.chk_no_action_needed)
             )
         }

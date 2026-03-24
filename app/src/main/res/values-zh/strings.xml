@@ -1851,4 +1851,25 @@
     <string name="chk_hma_blacklist_reason_nd">对 /data/user/0 的原始 fstatat(2) 返回的目录链接计数为 100 或以上（正常范围）。未检测到 HMA 黑名单计数异常。</string>
     <string name="chk_hma_blacklist_solution">在 Hide My Applist 应用中，将本应用从黑名单作用域中移除，或在 LSPosed 管理器中禁用 HMA 模块并重启。</string>
 
+    <!-- XposedDetector: Check 30 — 寄生管理器（Shell/Shizuku）检测 -->
+    <string name="chk_parasite_manager_name">检测到寄生管理器（Shell/Shizuku）</string>
+    <string name="chk_parasite_manager_name_nd">寄生管理器 Shell 检测</string>
+    <string name="chk_parasite_manager_desc">检测到基于 Shell 或 APK 补丁的寄生管理器（Shizuku、LSPatch）。这些框架无需传统 Root 管理器，通过寄生 ADB Shell 进程或直接为 APK 打补丁的方式注入 Xposed/LSPosed 能力。</string>
+    <string name="chk_parasite_manager_desc_nd">未检测到基于 Shell 的寄生管理器（Shizuku、LSPatch）。</string>
+    <string name="chk_parasite_manager_reason">发现以下寄生管理器指标：%1$s。Shizuku 以 ADB Shell 用户（uid 2000）运行特权 Binder 服务，允许应用在无完整 Root 的情况下以 Shell 身份执行操作。LSPatch 将 LSPosed Hook 直接嵌入已打补丁的 APK，绕过系统级框架注入。两种机制均可在不留下传统 Root 痕迹的情况下为本应用应用 Xposed 模块。</string>
+    <string name="chk_parasite_manager_reason_nd">未检测到 Shizuku 或 LSPatch 软件包、磁盘文件，也未发现以 Shell 用户运行的 lspd 进程。</string>
+    <string name="chk_parasite_manager_solution">卸载 Shizuku、LSPatch 或任何相关寄生管理器，然后重启设备。如果正在使用已打补丁的 APK，请从可信来源重新安装原始 APK。</string>
+
+    <!-- SystemIntegrityDetector: Check 7 — 骁龙 8 Gen 2 – 8 Elite 安全补丁检测 -->
+    <string name="chk_snapdragon_patch_name">严重漏洞：骁龙安全补丁缺失</string>
+    <string name="chk_snapdragon_patch_name_ok">骁龙关键补丁已应用</string>
+    <string name="chk_snapdragon_patch_name_na">骁龙关键补丁检查</string>
+    <string name="chk_snapdragon_patch_desc">本设备的骁龙 SoC 受到一个严重提权漏洞的影响。已安装的安全补丁级别低于所需的 2026-03-01 修复版本。</string>
+    <string name="chk_snapdragon_patch_desc_ok">检测到的骁龙 SoC 安全补丁级别满足最低要求。</string>
+    <string name="chk_snapdragon_patch_desc_na">本设备似乎未使用骁龙 8 Gen 2 – 8 Elite SoC，针对该漏洞的检查不适用。</string>
+    <string name="chk_snapdragon_patch_reason">SoC %1$s 处于受影响范围（骁龙 8 Gen 2 / SM8550 至骁龙 8 Elite / SM8750）。当前安全补丁：%2$s。所需补丁：%3$s。此 SoC 范围内未应用 2026-03-01（或更新）安全补丁的设备存在严重提权漏洞，允许本地攻击者在设备上获取提升的权限。</string>
+    <string name="chk_snapdragon_patch_reason_ok">SoC %1$s 处于受影响范围，但已安装的安全补丁 %2$s 达到或超过了所需的 2026-03-01 级别。提权漏洞已修复。</string>
+    <string name="chk_snapdragon_patch_reason_na">检测到的 SoC 标识符（ro.soc.model、ro.board.platform、ro.chipname、ro.hardware）与骁龙 8 Gen 2 – 8 Elite（SM8550 – SM8750）范围内的任何 SoC 均不匹配。骁龙专项安全补丁检查不适用于本设备。</string>
+    <string name="chk_snapdragon_patch_solution">安装包含 2026-03-01（或更新）Android 安全补丁级别的最新 OEM 安全更新。请访问设备制造商的支持页面查看可用更新。</string>
+
 </resources>

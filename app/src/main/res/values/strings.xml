@@ -1915,4 +1915,25 @@
     <string name="chk_hunter_elf_symbols_reason_nd">Direct ELF section parsing of all mapped .so files found no symbols belonging to LSPlant, Frida (gum), Dobby, ShadowHook, or Pine hook frameworks.</string>
     <string name="chk_hunter_elf_symbols_solution">Remove the native hook library (liblsplant.so, libfrida-agent.so, libdobby.so, etc.) from the device. Disable the Zygisk/Riru module that injects it and reboot.</string>
 
+    <!-- XposedDetector: Check 30 — Parasite manager shell detection -->
+    <string name="chk_parasite_manager_name">Parasite Manager (Shell/Shizuku) Detected</string>
+    <string name="chk_parasite_manager_name_nd">Parasite Manager Shell Detection</string>
+    <string name="chk_parasite_manager_desc">A shell-based or APK-patching parasite manager (Shizuku, LSPatch) was detected. These frameworks inject Xposed/LSPosed capabilities without a traditional root manager by parasitizing the ADB shell process or patching APKs directly.</string>
+    <string name="chk_parasite_manager_desc_nd">No shell-based parasite managers (Shizuku, LSPatch) detected.</string>
+    <string name="chk_parasite_manager_reason">The following parasite manager indicators were found: %1$s. Shizuku runs a privileged binder service under the ADB shell user (uid 2000), allowing apps to perform operations as shell without full root. LSPatch embeds LSPosed hooks directly inside patched APKs, bypassing system-level framework injection. Either mechanism can be used to apply Xposed modules targeting this app without leaving traditional root artifacts.</string>
+    <string name="chk_parasite_manager_reason_nd">No Shizuku or LSPatch packages, on-disk artifacts, or shell-user lspd processes were detected.</string>
+    <string name="chk_parasite_manager_solution">Uninstall Shizuku, LSPatch, or any associated parasite manager, then reboot the device. If a patched APK is in use, reinstall the original APK from a trusted source.</string>
+
+    <!-- SystemIntegrityDetector: Check 7 — Snapdragon 8 Gen 2 – 8 Elite security patch -->
+    <string name="chk_snapdragon_patch_name">Critical Snapdragon Vulnerability — Patch Missing</string>
+    <string name="chk_snapdragon_patch_name_ok">Snapdragon Critical Patch Applied</string>
+    <string name="chk_snapdragon_patch_name_na">Snapdragon Critical Patch Check</string>
+    <string name="chk_snapdragon_patch_desc">This device\'s Snapdragon SoC is affected by a critical privilege-escalation vulnerability. The installed security patch level is older than the required 2026-03-01 fix.</string>
+    <string name="chk_snapdragon_patch_desc_ok">The security patch level meets the minimum requirement for the detected Snapdragon SoC.</string>
+    <string name="chk_snapdragon_patch_desc_na">This device does not appear to use a Snapdragon 8 Gen 2 – 8 Elite SoC; the targeted vulnerability check does not apply.</string>
+    <string name="chk_snapdragon_patch_reason">SoC %1$s is in the affected range (Snapdragon 8 Gen 2 / SM8550 through 8 Elite / SM8750). Current security patch: %2$s. Required patch: %3$s. Devices in this SoC range that have not applied the 2026-03-01 (or later) security patch are vulnerable to a critical privilege-escalation flaw that allows local attackers to gain elevated privileges on the device.</string>
+    <string name="chk_snapdragon_patch_reason_ok">SoC %1$s is in the affected range but the installed security patch %2$s meets or exceeds the required 2026-03-01 level. The privilege-escalation vulnerability has been patched.</string>
+    <string name="chk_snapdragon_patch_reason_na">The detected SoC identifiers (ro.soc.model, ro.board.platform, ro.chipname, ro.hardware) do not match any SoC in the Snapdragon 8 Gen 2 – 8 Elite (SM8550 – SM8750) range. The Snapdragon-specific security patch check is not applicable to this device.</string>
+    <string name="chk_snapdragon_patch_solution">Install the latest OEM security update that includes the 2026-03-01 (or later) Android security patch level. Check your device manufacturer\'s support page for available updates.</string>
+
 </resources>
