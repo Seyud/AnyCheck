@@ -1408,13 +1408,13 @@
     <string name="chk_luna_sensitive_pkgs_desc_nd">未检测到 root 隐藏应用。</string>
     <string name="chk_luna_sensitive_pkgs_reason_nd">Luna 方法 (wNxM8s/K0ajGz)：未安装已知的 root 隐藏软件包。</string>
     <!-- LunaDetector: Check 22 - MAC Address Anomaly -->
-    <string name="chk_luna_mac_anomaly_name">MAC 地址异常（零 MAC）</string>
-    <string name="chk_luna_mac_anomaly_desc">网络接口具有零 MAC 地址，表明可能存在 root 欺骗。</string>
-    <string name="chk_luna_mac_anomaly_reason">Luna 方法 (magiskmac)：%1$s。Magisk 或 root 模块可能抑制 MAC 地址以绕过设备指纹识别。</string>
-    <string name="chk_luna_mac_anomaly_solution">调查是否有 Magisk 模块在抑制 MAC 地址。</string>
-    <string name="chk_luna_mac_anomaly_name_nd">MAC 地址检查</string>
-    <string name="chk_luna_mac_anomaly_desc_nd">未检测到零 MAC 地址异常。</string>
-    <string name="chk_luna_mac_anomaly_reason_nd">Luna 方法 (magiskmac)：所有可读的网络接口均具有非零 MAC 地址。</string>
+    <string name="chk_luna_mac_anomaly_name">Magisk MAC 地址异常</string>
+    <string name="chk_luna_mac_anomaly_desc">检测到网络接口 MAC 地址异常。Magisk 可能正在通过虚拟接口或 MAC 欺骗操控网络栈。</string>
+    <string name="chk_luna_mac_anomaly_reason">Luna 方法 (magiskmac)：%1$s。Magisk 在隔离命名空间中创建具有零地址或占位 MAC 的虚拟网络接口（dummy*、vnet*），或通过 MAC 欺骗模块修改 /sys/class/net/wlan0/address 而不更新硬件 MAC 属性。</string>
+    <string name="chk_luna_mac_anomaly_solution">调查是否有 Magisk 模块在创建虚拟接口或欺骗 WiFi MAC 地址。移除相关 Magisk 模块并重启应可恢复硬件 MAC。</string>
+    <string name="chk_luna_mac_anomaly_name_nd">Magisk MAC 地址检查</string>
+    <string name="chk_luna_mac_anomaly_desc_nd">未检测到 Magisk MAC 地址异常（无零/占位 MAC、无 Magisk 虚拟接口、WiFi MAC 与硬件属性一致）。</string>
+    <string name="chk_luna_mac_anomaly_reason_nd">Luna 方法 (magiskmac)：所有可读网络接口 MAC 地址正常；未检测到 dummy*/vnet* Magisk 虚拟接口；wlan0 MAC 与硬件属性匹配。</string>
 
 
     <!-- RevenyInspiredDetector: Check 1 - Custom ROM -->

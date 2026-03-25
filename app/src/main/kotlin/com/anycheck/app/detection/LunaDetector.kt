@@ -1259,27 +1259,88 @@ class LunaDetector(private val context: Context) {
     }
 
     // -------------------------------------------------------------------------
-    // Luna: magiskmac
-    // Reads /sys/class/net/<iface>/address to detect a zero MAC address
-    // (00:00:00:00:00:00) which indicates Magisk or root modules are suppressing
-    // or spoofing the hardware MAC to bypass device fingerprinting.
+    // Luna: magiskmac (expanded)
+    // Reads /sys/class/net/<iface>/address to detect MAC address anomalies that
+    // indicate Magisk or root modules are manipulating the network stack:
+    //
+    //  1. Zero MAC (00:00:00:00:00:00) — Magisk vnet/network-namespace artifacts.
+    //     Magisk can create virtual network interfaces in an isolated namespace;
+    //     these appear with all-zero MACs in /sys/class/net.
+    //
+    //  2. Dummy MAC (02:00:00:00:00:00) — The "locally-administered" placeholder
+    //     MAC assigned to dummy0 or vnet* interfaces created by the Linux kernel
+    //     when Magisk sets up a separate network namespace for DenyList isolation.
+    //
+    //  3. Virtual Magisk interface names (dummy*, vnet*) — These kernel virtual
+    //     interfaces should not appear on a stock Android device.  Magisk creates
+    //     them to give isolated processes a network interface without exposing the
+    //     real WiFi/Ethernet stack.
+    //
+    //  4. WiFi MAC vs hardware MAC mismatch — Magisk modules that spoof the MAC
+    //     address (e.g. for privacy or fingerprinting bypass) change the value in
+    //     /sys/class/net/wlan0/address but leave the hardware MAC in Android
+    //     system properties untouched.
     // -------------------------------------------------------------------------
     private fun checkMacAddressAnomaly(): DetectionResult {
         val suspicious = mutableListOf<String>()
 
+        // --- (1) & (2) Zero / dummy MAC per interface, (3) virtual interface names ---
         try {
             val netDir = File("/sys/class/net")
             val ifaces = netDir.listFiles() ?: emptyArray()
             for (iface in ifaces) {
                 if (iface.name == "lo") continue
-                val addressFile = File(iface, "address")
-                if (!addressFile.canRead()) continue
-                val mac = addressFile.readText().trim()
-                if (mac == "00:00:00:00:00:00") {
-                    suspicious.add("${iface.name}: zero MAC — possible root spoofing")
+                val mac = runCatching {
+                    File(iface, "address").readText().trim()
+                }.getOrNull() ?: continue
+
+                when {
+                    mac == "00:00:00:00:00:00" ->
+                        suspicious.add("${iface.name}: zero MAC (00:00:00:00:00:00) — Magisk vnet artifact")
+                    mac == "02:00:00:00:00:00" ->
+                        suspicious.add("${iface.name}: dummy placeholder MAC (02:00:00:00:00:00) — Magisk namespace artifact")
+                }
+
+                // Any dummy* or vnet* interface should not exist on a real stock device
+                if (iface.name.startsWith("dummy") || iface.name.startsWith("vnet")) {
+                    if (!suspicious.any { it.startsWith(iface.name + ":") }) {
+                        // Not already reported via MAC check above
+                        suspicious.add("${iface.name}: Magisk virtual interface present (mac=$mac)")
+                    }
                 }
             }
         } catch (_: Exception) {}
+
+        // --- (4) WiFi MAC vs hardware-MAC system-property mismatch ---
+        // Magisk MAC-spoofing modules alter /sys/class/net/wlan0/address but leave
+        // the device's factory MAC address in the system property store intact.
+        runCatching {
+            val wlanFile = File("/sys/class/net/wlan0/address")
+            if (!wlanFile.exists() || !wlanFile.canRead()) return@runCatching
+            val wlanMac = wlanFile.readText().trim()
+            // Only flag a mismatch if the WiFi MAC is non-zero (zero was already caught above)
+            if (wlanMac.isNotEmpty() && wlanMac != "00:00:00:00:00:00") {
+                val sp = Class.forName("android.os.SystemProperties")
+                val getProp = sp.getMethod("get", String::class.java, String::class.java)
+                listOf(
+                    "ro.boot.mac_addr",
+                    "ro.boot.wifimacaddr",
+                    "persist.sys.wifi_mac",
+                    "wifi.mac.addr"
+                ).forEach { prop ->
+                    val hwMac = (getProp.invoke(null, prop, "") as? String)
+                        ?.trim()?.lowercase()
+                    if (!hwMac.isNullOrEmpty() &&
+                        hwMac != wlanMac.lowercase() &&
+                        hwMac != "00:00:00:00:00:00"
+                    ) {
+                        suspicious.add(
+                            "wlan0 MAC mismatch: current=$wlanMac vs hw[$prop]=$hwMac — possible spoofing"
+                        )
+                    }
+                }
+            }
+        }
 
         return if (suspicious.isNotEmpty()) {
             DetectionResult(

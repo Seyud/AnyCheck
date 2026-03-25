@@ -1660,6 +1660,7 @@ class XposedDetector(private val context: Context) {
         // files are mapped into system_server's address space and visible in its maps.
         // (Reading another process's maps may be denied by SELinux on hardened devices;
         //  we attempt it anyway as it succeeds on permissive or older kernels.)
+        val whitespaceRe = "\\s+".toRegex()
         try {
             val ssPid = findSystemServerPid()
             if (ssPid != null) {
@@ -1669,7 +1670,7 @@ class XposedDetector(private val context: Context) {
                     val injected = mapsFile.readText()
                         .lineSequence()
                         .mapNotNull { line ->
-                            line.trim().split("\\s+".toRegex()).lastOrNull()
+                            line.trim().split(whitespaceRe).lastOrNull()
                                 ?.takeIf { it.startsWith("/") }
                         }
                         .filter { path ->
@@ -1731,9 +1732,19 @@ class XposedDetector(private val context: Context) {
         } catch (_: Exception) {}
 
         // --- (e) 'android' package notification channel registered by lspd ---
-        // lspd registers a notification channel on the 'android' system package so
-        // system_server can post the activation notification.  We probe this via the
-        // INotificationManager hidden API (getNotificationChannelsForPackage).
+        // LSPosed Parasite mode registers a notification channel on the 'android'
+        // system package (uid=1000) to post the activation notification.
+        //
+        // Notification content reading via NotificationListenerService REQUIRES the
+        // user to grant BIND_NOTIFICATION_LISTENER_SERVICE in Settings → Notification
+        // access.  Since we cannot rely on the user granting this, we instead use the
+        // INotificationManager hidden API which is accessible to any app without
+        // special permissions:
+        //   • getNotificationChannelsForPackage  — enumerates channels on the android
+        //     package; lspd registers one with an id containing "lspd" or "lsposed".
+        //   • getActiveNotificationsFromListener(null, …) — on many pre-hardened
+        //     devices this returns the current system notification list even without
+        //     a registered listener token, making it a useful secondary signal.
         try {
             val nm = context.getSystemService(android.app.NotificationManager::class.java)
             val iNm = nm?.javaClass
@@ -1741,28 +1752,97 @@ class XposedDetector(private val context: Context) {
                 ?.apply { isAccessible = true }
                 ?.invoke(nm)
             if (iNm != null) {
-                val method = iNm.javaClass.getMethod(
-                    "getNotificationChannelsForPackage",
-                    String::class.java,
-                    Int::class.javaPrimitiveType,
-                    Boolean::class.javaPrimitiveType
-                )
-                val result = method.invoke(iNm, "android", 1000, false)
-                // result is a ParceledListSlice<NotificationChannel>; unwrap via getList()
-                @Suppress("UNCHECKED_CAST")
-                val list = result?.javaClass
-                    ?.getMethod("getList")
-                    ?.invoke(result) as? List<*>
-                list?.forEach { channel ->
-                    val id = channel?.javaClass
-                        ?.getMethod("getId")
-                        ?.invoke(channel) as? String
-                    if (id != null &&
-                        (id.contains("lsposed", ignoreCase = true) ||
-                            id.contains("lspd", ignoreCase = true))
-                    ) {
-                        found.add("LSPosed notification channel on android package: $id")
+                // (e-1) Channel enumeration on the android package — no permission needed.
+                runCatching {
+                    val method = iNm.javaClass.getMethod(
+                        "getNotificationChannelsForPackage",
+                        String::class.java,
+                        Int::class.javaPrimitiveType,
+                        Boolean::class.javaPrimitiveType
+                    )
+                    val result = method.invoke(iNm, "android", 1000, false)
+                    @Suppress("UNCHECKED_CAST")
+                    val list = result?.javaClass
+                        ?.getMethod("getList")
+                        ?.invoke(result) as? List<*>
+                    list?.forEach { channel ->
+                        val id = channel?.javaClass
+                            ?.getMethod("getId")
+                            ?.invoke(channel) as? String
+                        val name = runCatching {
+                            channel?.javaClass?.getMethod("getName")?.invoke(channel)
+                                ?.toString()
+                        }.getOrNull() ?: ""
+                        val combined = "$id $name".lowercase()
+                        if (combined.contains("lsposed") || combined.contains("lspd") ||
+                            combined.contains("xposed")
+                        ) {
+                            found.add(
+                                "LSPosed notification channel on android pkg: id=$id name=$name"
+                            )
+                        }
                     }
+                }
+
+                // (e-2) Active-notification enumeration — works on many devices even
+                // without a registered listener; fails silently on hardened ones.
+                runCatching {
+                    val getActive = iNm.javaClass.getMethod(
+                        "getActiveNotificationsFromListener",
+                        Class.forName("android.service.notification.INotificationListener"),
+                        Array<String>::class.java,
+                        Int::class.javaPrimitiveType
+                    )
+                    @Suppress("UNCHECKED_CAST")
+                    val slice = getActive.invoke(iNm, null, null, 0)
+                    val notifs = slice?.javaClass?.getMethod("getList")?.invoke(slice) as? List<*>
+                    notifs?.forEach { sbn ->
+                        val pkg = sbn?.javaClass?.getMethod("getPackageName")
+                            ?.invoke(sbn) as? String ?: return@forEach
+                        val nb = sbn.javaClass.getMethod("getNotification").invoke(sbn)
+                        val tickerText = nb?.javaClass
+                            ?.getField("tickerText")
+                            ?.get(nb)?.toString() ?: ""
+                        // `extras` is a public Bundle field on android.app.Notification
+                        val extras = nb?.javaClass?.getField("extras")?.get(nb)
+                        val title = extras?.javaClass
+                            ?.getMethod("getCharSequence", String::class.java)
+                            ?.invoke(extras, "android.title")?.toString() ?: ""
+                        val body = extras?.javaClass
+                            ?.getMethod("getCharSequence", String::class.java)
+                            ?.invoke(extras, "android.text")?.toString() ?: ""
+                        val combined = "$pkg $tickerText $title $body".lowercase()
+                        if (combined.contains("lsposed") || combined.contains("lspd") ||
+                            combined.contains("magisk") || combined.contains("xposed")
+                        ) {
+                            found.add(
+                                "Parasite activation notification visible: pkg=$pkg title=\"$title\""
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        // --- (f) /data/system/users/0/notification_channels.xml persistence ---
+        // Android stores notification channels in a per-user XML file.  If lspd has
+        // ever been active in Parasite mode on this device, its channel entry for the
+        // 'android' package may still be present in this file even after lspd is
+        // unloaded.  The file is not directly readable by a normal app, but on
+        // devices where /data/system is world-listable (older/custom ROMs) the file
+        // may be accessible.
+        try {
+            val ncFile = File("/data/system/users/0/notification_channels.xml")
+            if (ncFile.canRead()) {
+                val content = ncFile.readText()
+                if ((content.contains("lspd", ignoreCase = true) ||
+                        content.contains("lsposed", ignoreCase = true)) &&
+                    content.contains("\"android\"")
+                ) {
+                    found.add(
+                        "lspd channel entry found in notification_channels.xml " +
+                            "(persistent residue from prior Parasite mode session)"
+                    )
                 }
             }
         } catch (_: Exception) {}

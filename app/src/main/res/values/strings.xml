@@ -1417,13 +1417,13 @@
     <string name="chk_luna_sensitive_pkgs_desc_nd">No root-hiding apps detected.</string>
     <string name="chk_luna_sensitive_pkgs_reason_nd">Luna-method (wNxM8s/K0ajGz): No known root-hiding packages installed.</string>
     <!-- LunaDetector: Check 22 - MAC Address Anomaly -->
-    <string name="chk_luna_mac_anomaly_name">MAC Address Anomaly (Zero MAC)</string>
-    <string name="chk_luna_mac_anomaly_desc">Network interface has a zero MAC address, indicating possible root spoofing.</string>
-    <string name="chk_luna_mac_anomaly_reason">Luna-method (magiskmac): %1$s. Magisk or root modules may suppress the MAC address to bypass device fingerprinting.</string>
-    <string name="chk_luna_mac_anomaly_solution">Investigate whether a Magisk module is suppressing MAC addresses.</string>
-    <string name="chk_luna_mac_anomaly_name_nd">MAC Address Check</string>
-    <string name="chk_luna_mac_anomaly_desc_nd">No zero MAC address anomalies detected.</string>
-    <string name="chk_luna_mac_anomaly_reason_nd">Luna-method (magiskmac): All readable network interfaces have non-zero MAC addresses.</string>
+    <string name="chk_luna_mac_anomaly_name">Magisk MAC Address Anomaly</string>
+    <string name="chk_luna_mac_anomaly_desc">Network interface MAC address anomaly detected. Magisk may be manipulating the network stack via virtual interfaces or MAC spoofing.</string>
+    <string name="chk_luna_mac_anomaly_reason">Luna-method (magiskmac): %1$s. Magisk creates virtual network interfaces (dummy*, vnet*) with zero or placeholder MACs in isolated namespaces, or uses MAC-spoofing modules that change /sys/class/net/wlan0/address without updating the hardware MAC property.</string>
+    <string name="chk_luna_mac_anomaly_solution">Investigate whether a Magisk module is creating virtual interfaces or spoofing the WiFi MAC address. Removing relevant Magisk modules and rebooting should restore the hardware MAC.</string>
+    <string name="chk_luna_mac_anomaly_name_nd">Magisk MAC Address Check</string>
+    <string name="chk_luna_mac_anomaly_desc_nd">No Magisk MAC address anomalies detected (no zero/dummy MACs, no virtual Magisk interfaces, no WiFi MAC mismatch).</string>
+    <string name="chk_luna_mac_anomaly_reason_nd">Luna-method (magiskmac): All readable network interfaces have normal MAC addresses; no dummy*/vnet* Magisk virtual interfaces detected; wlan0 MAC matches hardware property.</string>
 
 
     <!-- RevenyInspiredDetector: Check 1 - Custom ROM -->
