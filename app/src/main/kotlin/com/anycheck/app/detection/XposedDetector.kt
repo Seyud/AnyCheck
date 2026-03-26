@@ -56,7 +56,12 @@ class XposedDetector(private val context: Context) {
             "io.github.lsposed.manager",
             "com.lsposed.manager",
             "io.github.vvb2060.xposeddaemon",
-            "io.github.luckyzyx.lsplantmod"          // LSPlant mod
+            "io.github.luckyzyx.lsplantmod",         // LSPlant mod
+            "io.github.qauxv",                       // QAuxiliary (Xposed module for QQ)
+            "com.sevtinge.hyperceiler",              // HyperCeiler (LSPosed module for MIUI/HyperOS)
+            "io.github.hyperisland",                 // HyperIsland
+            "top.hookvip.pro",                       // HookVIP Pro (hook framework)
+            "com.byyoung.setting"                    // Xposed settings module
         )
         val found = xposedPackages.filter { packageExists(it) }
         return if (found.isNotEmpty()) {
