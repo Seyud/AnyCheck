@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
 
                 if (showAbout) {
                     AboutScreen(
-                        appVersion = "1.0.9",
+                        appVersion = "1.1.0",
                         onNavigateBack = { showAbout = false }
                     )
                 } else {
