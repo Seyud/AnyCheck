@@ -29,6 +29,14 @@ class DetectionManager(private val context: Context) {
         val rikkaXDetector = RikkaXInspiredDetector(context)
         val hunterDetector = HunterDetector(context)
 
+        // The HMA cold/hot timing check MUST run before any other detector
+        // queries getPackageInfo() for the target packages.  If those packages
+        // are already in the PMS cache their "cold" start collapses to a cache
+        // hit and the ratio drops to ≈ 1, producing universal false positives.
+        // Collect the result here; RevenyInspiredDetector.runAllChecks() skips it.
+        val coldHotResult = revenyDetector.checkHmaColdHotTiming()
+        allResults.add(coldHotResult)
+
         val magiskChecks = magiskDetector.runAllChecks()
         onProgress(magiskChecks.size, 0, context.getString(R.string.progress_magisk))
         allResults.addAll(magiskChecks)
