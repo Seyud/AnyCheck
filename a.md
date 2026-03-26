@@ -57,8 +57,10 @@ Java_com_example_baseapp_MainActivity_testColdHot(JNIEnv *env, jobject thiz) {
     __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "====================================");
 }
 ~~~
-一个假包，一个待测目标包，一个系统包，根据下面标准判断
+一个假包，一个待测目标包，一个系统包，根据ratio进行下面标准判断
 
 R_{target} \gg R_{fake} 目标包享受了系统级的快速路径缓存 正常存在 (未隐藏)
+
 R_{target} \approx R_{fake} 目标包的冷热启动特征与随机包一致 真不存在
+
 R_{target} < R_{fake} 目标的冷启动被异常截断/热启动被延迟 实锤隐藏 (HMA)
