@@ -989,7 +989,7 @@ class RevenyInspiredDetector(private val context: Context) {
     //   producing a universal false positive.  DetectionManager therefore calls
     //   this function as its very first action, before all other detectors.
     //
-    // Algorithm mirrors the reference implementation in a.md:
+    // Algorithm:
     //
     //   Step 1 – Warm-up: issue TEST_COUNT queries for com.android.settings
     //            (known-present, known-not-hidden) to fully establish the Binder
@@ -1002,11 +1002,12 @@ class RevenyInspiredDetector(private val context: Context) {
     //   Step 3 – Measure each target in sequence.  Each target also has a cold
     //            PMS cache entry (first-ever query this session).
     //
-    //     Cold  = duration of the very first getPackageInfo() call (i == 0).
-    //     Hot   = average duration of the remaining TEST_COUNT-1 calls.
-    //     Ratio = Cold / HotAvg
+    //     Cold    = duration of the very first getPackageInfo() call (i == 0).
+    //     Hot     = TEST_COUNT-1 subsequent calls; the 15 lowest and 15 highest
+    //               samples are discarded; the remaining samples are averaged.
+    //     Ratio   = Cold / TrimmedHotAvg
     //
-    // Three-way classification (from a.md):
+    // Three-way classification:
     //
     //   R_target >> R_fake  → target benefits from PMS fast-path caching
     //                          → package is present and NOT hidden
@@ -1042,25 +1043,29 @@ class RevenyInspiredDetector(private val context: Context) {
         }
         return try {
             val pm = context.packageManager
-            val testCount = 50
+            val testCount = 300
+            val trimCount = 15
 
             fun measureRatio(pkgName: String): Float {
                 var coldTime = 0L
-                var hotTotal = 0L
+                val hotSamples = mutableListOf<Long>()
                 for (i in 0 until testCount) {
                     val start = System.nanoTime()
                     try { pm.getPackageInfo(pkgName, 0) } catch (_: Exception) {}
                     val duration = System.nanoTime() - start
-                    if (i == 0) coldTime = duration else hotTotal += duration
+                    if (i == 0) coldTime = duration else hotSamples.add(duration)
                 }
-                val hotAvg = hotTotal / (testCount - 1)
+                hotSamples.sort()
+                val trimmed = hotSamples.drop(trimCount).dropLast(trimCount)
+                if (trimmed.isEmpty()) return Float.MAX_VALUE
+                val hotAvg = trimmed.average()
                 // Return MAX_VALUE when hotAvg is zero (degenerate measurement)
                 // so this package is never wrongly flagged as hidden.
-                return if (hotAvg > 0) coldTime.toFloat() / hotAvg else Float.MAX_VALUE
+                return if (hotAvg > 0.0) coldTime.toFloat() / hotAvg.toFloat() else Float.MAX_VALUE
             }
 
             // Step 1: warm up the Binder connection with a known-present,
-            // known-not-hidden system package (mirrors a.md's first measurement).
+            // known-not-hidden system package.
             repeat(testCount) {
                 try { pm.getPackageInfo("com.android.settings", 0) } catch (_: Exception) {}
             }
