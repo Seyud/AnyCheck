@@ -1077,7 +1077,26 @@ class RevenyInspiredDetector(private val context: Context) {
                 Target("me.bmax.apatch.debug",          "APatch Debug",      DetectionCategory.APATCH),
                 Target("com.tsng.hidemyapplist",        "Hide My Applist",   DetectionCategory.XPOSED),
                 Target("com.tsng.hidemyapplist.debug",  "HMA Debug",         DetectionCategory.XPOSED),
-                Target("cn.hidemyapplist",              "Hide My Applist CN",DetectionCategory.XPOSED)
+                Target("cn.hidemyapplist",              "Hide My Applist CN",DetectionCategory.XPOSED),
+                Target("com.sukisu.ultra",              "SukiSU Ultra",      DetectionCategory.KERNELSU),
+                Target("moe.fuqiuluo.portaldev",        "Portal",            DetectionCategory.KERNELSU),
+                Target("io.github.qauxv",               "QAuxiliary",        DetectionCategory.XPOSED),
+                Target("com.sevtinge.hyperceiler",      "HyperCeiler",       DetectionCategory.XPOSED),
+                Target("io.github.hyperisland",         "HyperIsland",       DetectionCategory.XPOSED),
+                Target("top.hookvip.pro",               "HookVIP Pro",       DetectionCategory.XPOSED),
+                Target("com.byyoung.setting",           "ByyoungSetting",    DetectionCategory.XPOSED),
+                Target("moe.shizuku.privileged.api",    "Shizuku",           DetectionCategory.ROOT_MANAGEMENT),
+                Target("bin.mt.plus",                   "MT Manager",        DetectionCategory.ROOT_MANAGEMENT),
+                Target("bin.mt.termex",                 "MT Manager Terminal",DetectionCategory.ROOT_MANAGEMENT),
+                Target("bin.mt.plus.canary",            "MT Manager Canary", DetectionCategory.ROOT_MANAGEMENT),
+                Target("rikka.appops",                  "AppOps",            DetectionCategory.ROOT_MANAGEMENT),
+                Target("com.rosan.installer.x",         "Privileged Installer",DetectionCategory.ROOT_MANAGEMENT),
+                Target("cn.wq.myandroidtools",          "My Android Tools",  DetectionCategory.ROOT_MANAGEMENT),
+                Target("com.arcai.netcut",              "NetCut",            DetectionCategory.ROOT_MANAGEMENT),
+                Target("com.app.zhuaagytypo33",         "Suspicious APK",    DetectionCategory.ROOT_MANAGEMENT),
+                Target("com.tev.weixing",               "WeXing",            DetectionCategory.ROOT_MANAGEMENT),
+                Target("org.telegram.messenger",        "Telegram",          DetectionCategory.NETWORK),
+                Target("com.discord",                   "Discord",           DetectionCategory.NETWORK)
             )
 
             // Step 2: measure fakeRatio ONCE – all packages are cold at this

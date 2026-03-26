@@ -1242,9 +1242,9 @@ class LunaDetector(private val context: Context) {
             "top.hookvip.pro",             // HookVIP Pro
             "io.github.hyperisland",        // HyperIsland
             "com.byyoung.setting",          // Suspicious settings module
-            "com.app.zhuaagytypo33",        // Suspicious app
-            "com.arcai.netcut",             // NetCut (network attack tool)
-            "com.tev.weixing",              // Suspicious app
+            "com.app.zhuaagytypo33",        // Suspicious APK (obfuscated package name)
+            "com.arcai.netcut",             // NetCut (network attack tool requiring root)
+            "com.tev.weixing",              // WeXing (suspicious repackaged app)
             "org.telegram.messenger",       // Telegram
             "com.discord",                  // Discord
             "cn.wq.myandroidtools"          // My Android Tools

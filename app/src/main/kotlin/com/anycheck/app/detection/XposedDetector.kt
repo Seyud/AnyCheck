@@ -1319,7 +1319,20 @@ class XposedDetector(private val context: Context) {
             // HMA is also included here so a single /data/app pass covers both
             "com.tsng.hidemyapplist",
             "com.tsng.hidemyapplist.debug",
-            "cn.hidemyapplist"
+            "cn.hidemyapplist",
+            // New packages
+            "io.github.qauxv",
+            "com.sevtinge.hyperceiler",
+            "io.github.hyperisland",
+            "top.hookvip.pro",
+            "com.byyoung.setting",
+            "com.sukisu.ultra",
+            "moe.fuqiuluo.portaldev",
+            "moe.shizuku.privileged.api",
+            "bin.mt.plus",
+            "bin.mt.termex",
+            "bin.mt.plus.canary",
+            "com.rosan.installer.x"
         )
         val found = scanDataAppForPackages(*targets)
         return if (found.isNotEmpty()) {
