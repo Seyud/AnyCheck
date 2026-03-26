@@ -1154,56 +1154,36 @@ class RevenyInspiredDetector(private val context: Context) {
     }
 
     // -------------------------------------------------------------------------
-    // Check 5d-combined: run checkHmaColdHotTiming() three times and apply
-    // combination rules based on the displayed result of each run.
+    // Check 5d-combined: run checkHmaColdHotTiming() three times and decide
+    // the final result by counting how many runs returned DETECTED.
     //
-    // The three runs expose HMA behaviour at increasing cache warmth:
-    //   Run 1 (cold)  – first ever query for these packages in this process
-    //   Run 2 (warm)  – packages already in the PMS cache after run 1
-    //   Run 3 (hot)   – fully cached
-    //
-    // Combination rules (expressed as what is *displayed* to the user per run,
-    // where the underlying method's inverted logic is already applied):
-    //   r1=ND, r2=ND, r3=D  → NOT_DETECTED  (only last run clean → noise)
-    //   r1=ND, r2=D,  r3=D  → DETECTED + title suffix "（黑名单）"
-    //   r1=D,  r2=D,  r3=D  → DETECTED + title suffix "（白名单）"
-    //   other               → r3 result unchanged (fallback to latest run)
+    // Count rules (DETECTED = displayed status per run):
+    //   3 × DETECTED → DETECTED + "（白名单）"  (all runs clean → whitelist)
+    //   2 × DETECTED → DETECTED + "（黑名单）"  (majority clean → blacklist signal)
+    //   1 × DETECTED → NOT_DETECTED             (single clean run → false positive, suppress)
+    //   0 × DETECTED → r3 unchanged             (all runs anomalous)
     // -------------------------------------------------------------------------
     internal fun checkHmaColdHotTimingCombined(): DetectionResult {
         val r1 = checkHmaColdHotTiming()
         val r2 = checkHmaColdHotTiming()
         val r3 = checkHmaColdHotTiming()
 
-        val r1Detected = r1.status == DetectionStatus.DETECTED
-        val r2Detected = r2.status == DetectionStatus.DETECTED
-        val r3Detected = r3.status == DetectionStatus.DETECTED
+        val detectedCount = listOf(r1, r2, r3).count { it.status == DetectionStatus.DETECTED }
 
-        return when {
-            // Suppress: first two anomalous (ND), last one clean (D) → noise, force ND
-            !r1Detected && !r2Detected && r3Detected ->
-                r3.copy(
-                    status = DetectionStatus.NOT_DETECTED,
-                    name = context.getString(R.string.chk_hma_cold_hot_name_nd)
-                )
-            // Blacklist pattern A: cold call intercepted (ND), warm cache bypasses HMA (D, D)
-            !r1Detected && r2Detected && r3Detected ->
-                r3.copy(
-                    name = context.getString(R.string.chk_hma_cold_hot_name) +
-                           context.getString(R.string.chk_hma_cold_hot_suffix_blacklist)
-                )
-            // Blacklist pattern B: all three consistently intercepted → strong HMA blacklist signal
-            !r1Detected && !r2Detected && !r3Detected ->
-                r3.copy(
-                    status = DetectionStatus.DETECTED,
-                    name = context.getString(R.string.chk_hma_cold_hot_name) +
-                           context.getString(R.string.chk_hma_cold_hot_suffix_blacklist)
-                )
-            // Whitelist: all three clean → app not in HMA blacklist scope
-            r1Detected && r2Detected && r3Detected ->
-                r3.copy(
-                    name = context.getString(R.string.chk_hma_cold_hot_name) +
-                           context.getString(R.string.chk_hma_cold_hot_suffix_whitelist)
-                )
+        return when (detectedCount) {
+            3 -> r3.copy(
+                name = context.getString(R.string.chk_hma_cold_hot_name) +
+                       context.getString(R.string.chk_hma_cold_hot_suffix_whitelist)
+            )
+            2 -> r3.copy(
+                status = DetectionStatus.DETECTED,
+                name = context.getString(R.string.chk_hma_cold_hot_name) +
+                       context.getString(R.string.chk_hma_cold_hot_suffix_blacklist)
+            )
+            1 -> r3.copy(
+                status = DetectionStatus.NOT_DETECTED,
+                name = context.getString(R.string.chk_hma_cold_hot_name_nd)
+            )
             else -> r3
         }
     }
