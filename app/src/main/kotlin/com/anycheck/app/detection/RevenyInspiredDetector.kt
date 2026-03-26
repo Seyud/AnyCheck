@@ -37,7 +37,8 @@ class RevenyInspiredDetector(private val context: Context) {
             checkHmaBinderProbe(),
             checkHmaFilterBehavior(),
             checkHmaDataAppScan(),
-            checkHMANativeDetection()
+            checkHMANativeDetection(),
+            checkHmaColdHotTiming()
         )
         if (useHighTargetSdkPath) {
             results.add(checkDataAdbAccessForMagisk())
@@ -969,6 +970,125 @@ class RevenyInspiredDetector(private val context: Context) {
                 riskLevel = RiskLevel.HIGH,
                 description = context.getString(R.string.chk_hma_native_desc_nd),
                 detailedReason = context.getString(R.string.chk_hma_native_reason_nd),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Check 5i: HMA cold/hot startup timing analysis (SDK > 28)
+    //
+    // Hide My Applist hooks PackageManagerService.shouldFilterApplication() at
+    // the system_server level.  When PMS serves a cached (hot) response for a
+    // real package the round-trip is very fast; the very first (cold) call
+    // pays a higher latency because the cache is empty.  This produces a
+    // high cold/hot ratio for packages that genuinely exist.
+    //
+    // For a non-existent package, PMS returns NameNotFoundException immediately
+    // both on cold and hot calls, so the ratio ≈ 1 (both fast).
+    //
+    // When HMA hides a package it intercepts the Binder call before it reaches
+    // PMS's caching path.  The interception overhead is consistent across both
+    // cold and hot calls, so the ratio of a hidden package is anomalously low —
+    // in practice LOWER than the fake-package ratio:
+    //
+    //   R_target >> R_fake  → package is normally present (not hidden)
+    //   R_target ≈ R_fake   → package does not exist on this device
+    //   R_target  < R_fake  → package is being hidden by HMA
+    //
+    // We test Magisk, KernelSU, APatch, and HMA itself as targets.
+    // Only runs on SDK > 28 (PackageManager query behaviour is stable there).
+    // -------------------------------------------------------------------------
+    private fun checkHmaColdHotTiming(): DetectionResult {
+        if (Build.VERSION.SDK_INT <= 28) {
+            return DetectionResult(
+                id = "hma_cold_hot_timing",
+                name = context.getString(R.string.chk_hma_cold_hot_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.NOT_DETECTED,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_hma_cold_hot_desc_na),
+                detailedReason = context.getString(R.string.chk_hma_cold_hot_reason_na),
+                solution = context.getString(R.string.no_action_required)
+            )
+        }
+        return try {
+            val pm = context.packageManager
+            val testCount = 50
+
+            fun measureRatio(pkgName: String): Float {
+                var coldTime = 0L
+                var hotTotal = 0L
+                for (i in 0 until testCount) {
+                    val start = System.nanoTime()
+                    try { pm.getPackageInfo(pkgName, 0) } catch (_: Exception) {}
+                    val duration = System.nanoTime() - start
+                    if (i == 0) coldTime = duration else hotTotal += duration
+                }
+                val hotAvg = hotTotal / (testCount - 1)
+                return coldTime.toFloat() / (if (hotAvg > 0) hotAvg else 1)
+            }
+
+            val fakeRatio = measureRatio("com.random.fake.pkg.xingguang6666")
+
+            data class Target(val pkg: String, val label: String, val cat: DetectionCategory)
+            val targets = listOf(
+                Target("com.topjohnwu.magisk",         "Magisk",            DetectionCategory.MAGISK),
+                Target("com.topjohnwu.magisk.stub",    "Magisk Stub",       DetectionCategory.MAGISK),
+                Target("me.weishu.kernelsu",            "KernelSU",          DetectionCategory.KERNELSU),
+                Target("me.weishu.kernelsu.debug",      "KernelSU Debug",    DetectionCategory.KERNELSU),
+                Target("me.bmax.apatch",                "APatch",            DetectionCategory.APATCH),
+                Target("me.bmax.apatch.debug",          "APatch Debug",      DetectionCategory.APATCH),
+                Target("com.tsng.hidemyapplist",        "Hide My Applist",   DetectionCategory.XPOSED),
+                Target("com.tsng.hidemyapplist.debug",  "HMA Debug",         DetectionCategory.XPOSED),
+                Target("cn.hidemyapplist",              "Hide My Applist CN",DetectionCategory.XPOSED)
+            )
+
+            val hiddenLabels = mutableListOf<String>()
+            val details = StringBuilder()
+            details.append("fakeRatio=%.2f\n".format(fakeRatio))
+            for (t in targets) {
+                val ratio = measureRatio(t.pkg)
+                details.append("${t.label}: ratio=%.2f\n".format(ratio))
+                if (ratio < fakeRatio) hiddenLabels.add(t.label)
+            }
+
+            if (hiddenLabels.isNotEmpty()) {
+                DetectionResult(
+                    id = "hma_cold_hot_timing",
+                    name = context.getString(R.string.chk_hma_cold_hot_name),
+                    category = DetectionCategory.XPOSED,
+                    status = DetectionStatus.DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_hma_cold_hot_desc),
+                    detailedReason = context.getString(
+                        R.string.chk_hma_cold_hot_reason, hiddenLabels.joinToString(", ")
+                    ),
+                    solution = context.getString(R.string.chk_hma_cold_hot_solution),
+                    technicalDetail = details.toString().trimEnd()
+                )
+            } else {
+                DetectionResult(
+                    id = "hma_cold_hot_timing",
+                    name = context.getString(R.string.chk_hma_cold_hot_name_nd),
+                    category = DetectionCategory.XPOSED,
+                    status = DetectionStatus.NOT_DETECTED,
+                    riskLevel = RiskLevel.HIGH,
+                    description = context.getString(R.string.chk_hma_cold_hot_desc_nd),
+                    detailedReason = context.getString(R.string.chk_hma_cold_hot_reason_nd),
+                    solution = context.getString(R.string.no_action_required),
+                    technicalDetail = details.toString().trimEnd()
+                )
+            }
+        } catch (e: Exception) {
+            DetectionResult(
+                id = "hma_cold_hot_timing",
+                name = context.getString(R.string.chk_hma_cold_hot_name_nd),
+                category = DetectionCategory.XPOSED,
+                status = DetectionStatus.ERROR,
+                riskLevel = RiskLevel.HIGH,
+                description = context.getString(R.string.chk_hma_cold_hot_desc_nd),
+                detailedReason = e.message ?: "Unknown error",
                 solution = context.getString(R.string.no_action_required)
             )
         }
