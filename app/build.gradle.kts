@@ -12,8 +12,8 @@ android {
         applicationId = "com.anycheck.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10090
-        versionName = "1.0.9"
+        versionCode = 10100
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
