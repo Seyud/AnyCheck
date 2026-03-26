@@ -983,17 +983,14 @@ class RevenyInspiredDetector(private val context: Context) {
     // IMPORTANT – ordering constraint:
     //   This function MUST be called before any other detector queries
     //   getPackageInfo() for the target packages (Magisk, KernelSU, APatch,
-    //   HMA).  If any prior call has already warmed the PMS cache for a target,
-    //   that target's "cold" start (i == 0) is actually a cache-hit and its
-    //   cold/hot ratio collapses to ≈ 1, which is always below fakeRatio —
-    //   producing a universal false positive.  DetectionManager therefore calls
-    //   this function as its very first action, before all other detectors.
+    //   HMA).  DetectionManager therefore calls this function as its very
+    //   first action, before all other detectors.
     //
-    // Algorithm:
+    // Algorithm (mirrors a.c exactly):
     //
     //   Step 1 – Warm-up: issue TEST_COUNT queries for com.android.settings
-    //            (known-present, known-not-hidden) to fully establish the Binder
-    //            connection and JIT-compile the IPC hot path.
+    //            (known-present, known-not-hidden) to establish the Binder
+    //            connection (equivalent to a.c measuring settings first).
     //
     //   Step 2 – Measure fakeRatio once with a genuinely non-existent package.
     //            Because this function runs first, the fake package has never
@@ -1003,27 +1000,28 @@ class RevenyInspiredDetector(private val context: Context) {
     //            PMS cache entry (first-ever query this session).
     //
     //     Cold    = duration of the very first getPackageInfo() call (i == 0).
-    //     Hot     = TEST_COUNT-1 subsequent calls; the 15 lowest and 15 highest
-    //               samples are discarded; the remaining samples are averaged.
-    //     Ratio   = Cold / TrimmedHotAvg
+    //     Hot     = simple average of the remaining TEST_COUNT-1 calls
+    //               (matches a.c: hot_total / (TEST_COUNT - 1)).
+    //     Ratio   = Cold / HotAvg
     //
-    // Three-way classification:
+    // Three-way classification (empirically validated):
     //
-    //   R_target >> R_fake  → target benefits from PMS fast-path caching
-    //                          → package is present and NOT hidden
-    //   R_target ≈ R_fake   → same cold/hot profile as a non-existent package
-    //                          → package truly does not exist on this device
-    //   R_target  < R_fake  → cold start is abnormally short (HMA intercepts
-    //                          before the full PMS lookup runs)
-    //                          → package is being hidden by HMA
+    //   R_target > R_fake * 1.5  → first Xposed-hook call is slow (cold hook
+    //                               JIT init), subsequent intercepts are fast
+    //                               → package is being hidden by HMA
+    //   R_target ≈ R_fake        → same cold/hot profile as a non-existent
+    //                               package → package truly does not exist
+    //   R_target < R_fake        → PMS fast-path cache hit (installed app
+    //                               found quickly on cold call too)
+    //                               → package is present and NOT hidden
     //
-    // A safety margin of 0.75 is applied: a target is flagged only when its
-    // ratio is CLEARLY below the fake baseline (< 75 % of fakeRatio), not just
-    // marginally lower due to natural measurement variance.
+    // A safety multiplier of 1.5 is applied: a target is flagged only when its
+    // ratio is CLEARLY above the fake baseline (> 150% of fakeRatio).
     //
-    // Note: empirically, a non-existent package has ratio ≈ 28–38x (NOT ≈ 1).
-    // PMS still does a full scan before returning NameNotFoundException on the
-    // first call, then caches the "not found" answer for subsequent calls.
+    // Note: empirically, fakeRatio ≈ 20–35× with TEST_COUNT=50 and one prior
+    // warm-up run.  Hidden packages show ratio ≈ 2–3× fakeRatio (slow first
+    // Xposed intercept), while installed-not-hidden packages show ratio ≤
+    // fakeRatio (fast PMS cache lookup).
     //
     // We test Magisk, KernelSU, APatch, and HMA itself as targets.
     // Only runs on SDK > 28 (PackageManager query behaviour is stable there).
@@ -1043,29 +1041,28 @@ class RevenyInspiredDetector(private val context: Context) {
         }
         return try {
             val pm = context.packageManager
-            val testCount = 300
-            val trimCount = 15
+            // Match a.c's TEST_COUNT = 50 exactly.
+            val testCount = 50
 
             fun measureRatio(pkgName: String): Float {
                 var coldTime = 0L
-                val hotSamples = mutableListOf<Long>()
+                var hotTotal = 0L
                 for (i in 0 until testCount) {
                     val start = System.nanoTime()
                     try { pm.getPackageInfo(pkgName, 0) } catch (_: Exception) {}
                     val duration = System.nanoTime() - start
-                    if (i == 0) coldTime = duration else hotSamples.add(duration)
+                    if (i == 0) coldTime = duration else hotTotal += duration
                 }
-                hotSamples.sort()
-                val trimmed = hotSamples.drop(trimCount).dropLast(trimCount)
-                if (trimmed.isEmpty()) return Float.MAX_VALUE
-                val hotAvg = trimmed.average()
+                // Simple average, matching a.c: hot_avg = hot_total / (TEST_COUNT - 1)
+                val hotAvg = hotTotal.toDouble() / (testCount - 1)
                 // Return MAX_VALUE when hotAvg is zero (degenerate measurement)
                 // so this package is never wrongly flagged as hidden.
                 return if (hotAvg > 0.0) coldTime.toFloat() / hotAvg.toFloat() else Float.MAX_VALUE
             }
 
             // Step 1: warm up the Binder connection with a known-present,
-            // known-not-hidden system package.
+            // known-not-hidden system package (mirrors a.c measuring settings
+            // first, which implicitly warms the Binder before the fake package).
             repeat(testCount) {
                 try { pm.getPackageInfo("com.android.settings", 0) } catch (_: Exception) {}
             }
@@ -1102,9 +1099,10 @@ class RevenyInspiredDetector(private val context: Context) {
             }
 
             // Step 3: measure each target and apply the three-way classification.
-            // A safety margin of 0.75 is used so that only a CLEARLY lower ratio
-            // triggers detection, absorbing natural timing variance (reference
-            // data shows even unhidden packages can reach ~94 % of fakeRatio).
+            // A hidden package shows ratio > fakeRatio * 1.5 (elevated by the
+            // cold Xposed-hook JIT on the first intercept call).  A safety
+            // multiplier of 1.5 absorbs natural timing variance while reliably
+            // separating the ~2–3× elevation seen for hidden packages.
             val hiddenLabels = mutableListOf<String>()
             val details = StringBuilder()
             details.append("fakeRatio=%.2f\n".format(fakeRatio))
@@ -1112,7 +1110,7 @@ class RevenyInspiredDetector(private val context: Context) {
                 val ratio = measureRatio(t.pkg)
                 val pct = if (ratio == Float.MAX_VALUE) Float.NaN else ratio / fakeRatio * 100f
                 details.append("${t.label}: ratio=%.2f (%.0f%%)\n".format(ratio, pct))
-                if (ratio != Float.MAX_VALUE && ratio < fakeRatio * 0.75f) hiddenLabels.add(t.label)
+                if (ratio != Float.MAX_VALUE && ratio > fakeRatio * 1.5f) hiddenLabels.add(t.label)
             }
 
             if (hiddenLabels.isNotEmpty()) {
